@@ -32,6 +32,10 @@ runs/
 *.tar.gz
 *.log
 
+!data/pretrain_data/
+!data/pretrain_data/*.csv
+!data/finetune_data/
+!data/finetune_data/*.csv
 !configs/*.json
 !references_manifest.json
 !tests/fixtures/**/*.jsonl

@@ -14,21 +14,25 @@ The frozen ET predictor is `skboy/emotion_et_2nd_model`. It is not trained by th
 
 ## Main Paths
 
-Expected local ET data:
+Required ET data is committed under the repository:
 
-- `/Users/wansookim/Desktop/emotion_et_prediction/data/pretrain_data/provo.csv`
-- `/Users/wansookim/Desktop/emotion_et_prediction/data/pretrain_data/train_and_valid.csv`
-- `/Users/wansookim/Desktop/emotion_et_prediction/data/finetune_data/iitb_sa1_sa2_cmcl_scaled.csv`
+- `data/pretrain_data/provo.csv`
+- `data/pretrain_data/train_and_valid.csv`
+- `data/finetune_data/iitb_sa1_sa2_cmcl_scaled.csv`
 
-On a cloud GPU box, these Mac paths will not exist. Copy the same CSV files into the cloud workspace and set either `DATA_ROOT` or the three explicit CSV variables before running ET-HAE:
+The default ET-HAE scripts read from `data/` inside this repo. On a cloud GPU box, a normal `git pull` should be enough. Check availability with:
 
 ```bash
-export DATA_ROOT=/workspace/emotion_et_prediction/data
+bash scripts/check_required_data.sh
+```
 
-# Or set each file explicitly:
-export PROVO_CSV=/workspace/emotion_et_prediction/data/pretrain_data/provo.csv
-export TRAIN_VALID_CSV=/workspace/emotion_et_prediction/data/pretrain_data/train_and_valid.csv
-export FINETUNE_CSV=/workspace/emotion_et_prediction/data/finetune_data/iitb_sa1_sa2_cmcl_scaled.csv
+If you need to override the committed data, set either `DATA_ROOT` or explicit paths:
+
+```bash
+export DATA_ROOT=/path/to/emotion_et_prediction/data
+export PROVO_CSV=/path/to/provo.csv
+export TRAIN_VALID_CSV=/path/to/train_and_valid.csv
+export FINETUNE_CSV=/path/to/iitb_sa1_sa2_cmcl_scaled.csv
 ```
 
 Reference repositories and papers are managed by `scripts/download_refs.sh`.
@@ -40,7 +44,7 @@ cd /Users/wansookim/Documents/et_hae_reccon_workspace
 python -m pip install -e ".[dev]"
 python scripts/prepare_data.py \
   --output-jsonl artifacts/et_hae_data/smoke.jsonl \
-  --source /Users/wansookim/Desktop/emotion_et_prediction/data/finetune_data/iitb_sa1_sa2_cmcl_scaled.csv \
+  --source data/finetune_data/iitb_sa1_sa2_cmcl_scaled.csv \
   --predictor-backend target_noise \
   --max-sentences 64
 
@@ -62,9 +66,9 @@ Use the frozen emotion ET predictor to produce the noisy input heatmap:
 cd /Users/wansookim/Documents/et_hae_reccon_workspace
 python scripts/prepare_data.py \
   --output-jsonl artifacts/et_hae_data/emotion_et_skboy.jsonl \
-  --source /Users/wansookim/Desktop/emotion_et_prediction/data/pretrain_data/provo.csv \
-  --source /Users/wansookim/Desktop/emotion_et_prediction/data/pretrain_data/train_and_valid.csv \
-  --source /Users/wansookim/Desktop/emotion_et_prediction/data/finetune_data/iitb_sa1_sa2_cmcl_scaled.csv \
+  --source data/pretrain_data/provo.csv \
+  --source data/pretrain_data/train_and_valid.csv \
+  --source data/finetune_data/iitb_sa1_sa2_cmcl_scaled.csv \
   --predictor-backend skboy
 
 python scripts/train_et_hae.py \
