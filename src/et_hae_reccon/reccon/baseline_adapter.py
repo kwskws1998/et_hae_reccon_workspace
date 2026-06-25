@@ -21,6 +21,7 @@ class HFQAScorerConfig:
     model_name_or_path: str
     device: str = "auto"
     max_length: int = 512
+    max_query_length: int = 128
     doc_stride: int = 128
     max_answer_length: int = 80
     include_null: bool = True
@@ -40,9 +41,10 @@ class HFQASpanScorer:
 
     @torch.no_grad()
     def predict(self, example: QAExample, n_best: int = 20) -> QAPrediction:
-        safe_stride = safe_doc_stride(self.tokenizer, example.question, self.config.max_length, self.config.doc_stride)
+        question = truncate_question(self.tokenizer, example.question, self.config.max_query_length)
+        safe_stride = safe_doc_stride(self.tokenizer, question, self.config.max_length, self.config.doc_stride)
         encoded = self.tokenizer(
-            example.question,
+            question,
             example.context,
             truncation="only_second",
             max_length=self.config.max_length,
@@ -219,6 +221,20 @@ def safe_doc_stride(tokenizer, question: str, max_length: int, requested_stride:
             f"Question leaves no usable context window: question_tokens={len(question_ids)}, max_length={max_length}"
         )
     return max(0, min(requested_stride, context_window - 1))
+
+
+def truncate_question(tokenizer, question: str, max_query_length: int) -> str:
+    encoded = tokenizer(
+        question,
+        add_special_tokens=False,
+        truncation=True,
+        max_length=max_query_length,
+    )
+    return tokenizer.decode(
+        encoded["input_ids"],
+        skip_special_tokens=True,
+        clean_up_tokenization_spaces=True,
+    )
 
 
 def resolve_device(device: str) -> torch.device:

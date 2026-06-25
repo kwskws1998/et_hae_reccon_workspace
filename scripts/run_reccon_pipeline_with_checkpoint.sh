@@ -12,6 +12,7 @@ SPLIT="${SPLIT:-test}"
 MAX_EXAMPLES="${MAX_EXAMPLES:-}"
 N_BEST="${N_BEST:-20}"
 BETA="${BETA:-0.25}"
+MAX_QUERY_LENGTH="${MAX_QUERY_LENGTH:-128}"
 
 cd "$ROOT"
 
@@ -45,6 +46,7 @@ BASE_CMD=(
   --backend hf_qa
   --model-name-or-path "$QA_MODEL_PATH"
   --device "$DEVICE"
+  --max-query-length "$MAX_QUERY_LENGTH"
   --n-best "$N_BEST"
   --output-dir "$BASE_DIR"
 )

@@ -47,6 +47,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--lr", type=float, default=3e-5)
     parser.add_argument("--weight-decay", type=float, default=0.01)
     parser.add_argument("--max-length", type=int, default=512)
+    parser.add_argument("--max-query-length", type=int, default=128)
     parser.add_argument("--doc-stride", type=int, default=128)
     parser.add_argument("--max-train-examples", type=int, default=None)
     parser.add_argument("--max-valid-examples", type=int, default=None)
@@ -71,8 +72,8 @@ def main() -> None:
     valid_path = qa_file_for(args.reccon_root, args.dataset, args.fold, "valid", args.context)
     train_examples = load_reccon_qa(train_path, max_examples=args.max_train_examples)
     valid_examples = load_reccon_qa(valid_path, max_examples=args.max_valid_examples)
-    train_features = build_features(train_examples, tokenizer, args.max_length, args.doc_stride)
-    valid_features = build_features(valid_examples, tokenizer, args.max_length, args.doc_stride)
+    train_features = build_features(train_examples, tokenizer, args.max_length, args.max_query_length, args.doc_stride)
+    valid_features = build_features(valid_examples, tokenizer, args.max_length, args.max_query_length, args.doc_stride)
     train_loader = DataLoader(RecconQADataset(train_features), batch_size=args.batch_size, shuffle=True)
     valid_loader = DataLoader(RecconQADataset(valid_features), batch_size=args.batch_size, shuffle=False)
     optimizer = torch.optim.AdamW(model.parameters(), lr=args.lr, weight_decay=args.weight_decay)
@@ -101,6 +102,9 @@ def main() -> None:
         "valid_examples": len(valid_examples),
         "train_features": len(train_features),
         "valid_features": len(valid_features),
+        "max_length": args.max_length,
+        "max_query_length": args.max_query_length,
+        "doc_stride": args.doc_stride,
         "best_valid_loss": best_valid,
         "history": history,
         "best_model": str(output_dir / "best_model"),
@@ -110,12 +114,13 @@ def main() -> None:
     print(json.dumps(summary, indent=2))
 
 
-def build_features(examples, tokenizer, max_length: int, doc_stride: int) -> list[dict[str, torch.Tensor]]:
+def build_features(examples, tokenizer, max_length: int, max_query_length: int, doc_stride: int) -> list[dict[str, torch.Tensor]]:
     features: list[dict[str, torch.Tensor]] = []
     for example in tqdm(examples, desc="tokenize QA"):
-        safe_stride = safe_doc_stride(tokenizer, example.question, max_length, doc_stride)
+        question = truncate_question(tokenizer, example.question, max_query_length)
+        safe_stride = safe_doc_stride(tokenizer, question, max_length, doc_stride)
         encoded = tokenizer(
-            example.question,
+            question,
             example.context,
             truncation="only_second",
             max_length=max_length,
@@ -170,6 +175,20 @@ def safe_doc_stride(tokenizer, question: str, max_length: int, requested_stride:
             f"Question leaves no usable context window: question_tokens={len(question_ids)}, max_length={max_length}"
         )
     return max(0, min(requested_stride, context_window - 1))
+
+
+def truncate_question(tokenizer, question: str, max_query_length: int) -> str:
+    encoded = tokenizer(
+        question,
+        add_special_tokens=False,
+        truncation=True,
+        max_length=max_query_length,
+    )
+    return tokenizer.decode(
+        encoded["input_ids"],
+        skip_special_tokens=True,
+        clean_up_tokenization_spaces=True,
+    )
 
 
 def train_epoch(model, loader, optimizer, scheduler, scaler, device, grad_accum_steps: int, fp16: bool) -> float:

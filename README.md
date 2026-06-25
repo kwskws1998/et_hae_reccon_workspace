@@ -247,9 +247,13 @@ export DEVICE=cuda
 export EPOCHS=12
 export BATCH_SIZE=8
 export GRAD_ACCUM_STEPS=2
+export QA_MAX_LENGTH=512
+export MAX_QUERY_LENGTH=128
 export OUT_DIR=artifacts/reccon_hf_qa/roberta_base_fold1_context
 bash scripts/train_reccon_hf_qa_3090.sh
 ```
+
+`QA_MAX_LENGTH` is intentionally separate from the ET-HAE `MAX_LENGTH`; do not reuse `MAX_LENGTH=256` from ET-HAE for RECCON QA training. `MAX_QUERY_LENGTH` caps unusually long RECCON questions so the context span still fits inside the model window.
 
 The local RECCON paper PDF does not specify the training epoch count. The original RECCON repository default is `--epochs 12` in `repos/RECCON/train_qa.py`, so use `EPOCHS=12` for a paper-aligned baseline. Use `EPOCHS=3` only for a fast pilot run, and label it as such.
 
@@ -295,6 +299,7 @@ export FOLD=1
 export SPLIT=test
 export N_BEST=20
 export BETA=0.25
+export MAX_QUERY_LENGTH=128
 bash scripts/run_reccon_pipeline_with_checkpoint.sh
 ```
 

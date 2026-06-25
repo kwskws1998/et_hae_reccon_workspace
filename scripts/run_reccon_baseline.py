@@ -30,6 +30,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--backend", choices=["heuristic", "hf_qa"], default="heuristic")
     parser.add_argument("--model-name-or-path", default="deepset/roberta-base-squad2")
     parser.add_argument("--device", default="auto")
+    parser.add_argument("--max-query-length", type=int, default=128)
     parser.add_argument("--max-examples", type=int, default=None)
     parser.add_argument("--n-best", type=int, default=20)
     parser.add_argument("--output-dir", default="artifacts/reccon_baseline")
@@ -53,6 +54,7 @@ def main() -> None:
             HFQAScorerConfig(
                 model_name_or_path=args.model_name_or_path,
                 device=args.device,
+                max_query_length=args.max_query_length,
             )
         )
     predictions = [
