@@ -21,10 +21,7 @@ env_exists() {
 }
 
 env_python_version() {
-  conda run -n "$RECCON_CONDA_ENV" python - <<'PY'
-import sys
-print(f"{sys.version_info.major}.{sys.version_info.minor}")
-PY
+  conda run -n "$RECCON_CONDA_ENV" python -c 'import sys; print(f"{sys.version_info.major}.{sys.version_info.minor}")'
 }
 
 assert_env_python_version() {
@@ -54,6 +51,7 @@ if ! env_exists; then
 fi
 
 assert_env_python_version
+echo "$RECCON_CONDA_ENV Python version: $(env_python_version | tail -n 1)"
 
 conda run -n "$RECCON_CONDA_ENV" python -m pip install --upgrade pip setuptools wheel
 conda run -n "$RECCON_CONDA_ENV" python -m pip install \
@@ -71,15 +69,4 @@ conda run -n "$RECCON_CONDA_ENV" python -m pip install \
   "huggingface_hub<1.0"
 conda run -n "$RECCON_CONDA_ENV" python -m pip install torch --index-url "$TORCH_INDEX_URL"
 
-conda run -n "$RECCON_CONDA_ENV" python - <<'PY'
-from transformers import AdamW
-import pandas
-import sklearn
-import torch
-print("reccon env ok")
-print("pandas:", pandas.__version__)
-print("sklearn:", sklearn.__version__)
-print("torch:", torch.__version__)
-print("cuda:", torch.cuda.is_available())
-print("AdamW:", AdamW)
-PY
+conda run -n "$RECCON_CONDA_ENV" python -c 'from transformers import AdamW; import pandas, sklearn, torch; print("reccon env ok"); print("pandas:", pandas.__version__); print("sklearn:", sklearn.__version__); print("torch:", torch.__version__); print("cuda:", torch.cuda.is_available()); print("AdamW:", AdamW)'
