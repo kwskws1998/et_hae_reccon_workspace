@@ -283,10 +283,17 @@ export CUDA_DEVICE=0
 export WITH_CONTEXT=1
 export RECCON_CONDA_ENV=reccon_official_py310
 export EPOCHS=12
-export BATCH_SIZE=16
+export BATCH_SIZE=4
+export RECCON_GRAD_ACCUM_STEPS=4
+export RECCON_PROCESS_COUNT=4
 export LR=1e-5
 bash scripts/train_reccon_official_qa.sh
 ```
+
+On a 24 GB RTX 3090, the official RECCON context setting can OOM with a physical
+batch size of 16. The recommended 3090 run uses physical batch size 4 with
+gradient accumulation 4, and limits SimpleTransformers feature-conversion workers
+to 4. This keeps the effective training batch close to 16 while fitting GPU memory.
 
 Expected checkpoint:
 
@@ -306,7 +313,9 @@ export DEVICE=cuda
 export DATASET=dailydialog
 export FOLD=1
 export EPOCHS=12
-export BATCH_SIZE=16
+export BATCH_SIZE=4
+export RECCON_GRAD_ACCUM_STEPS=4
+export RECCON_PROCESS_COUNT=4
 export LR=1e-5
 export MAX_QUERY_LENGTH=128
 export MAX_ANSWER_LENGTH=200

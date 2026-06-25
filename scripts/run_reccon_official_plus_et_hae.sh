@@ -12,8 +12,10 @@ SPLIT="${SPLIT:-test}"
 MODEL="${MODEL:-rob}"
 WITH_CONTEXT="${WITH_CONTEXT:-1}"
 LR="${LR:-1e-5}"
-BATCH_SIZE="${BATCH_SIZE:-16}"
+BATCH_SIZE="${BATCH_SIZE:-4}"
 EPOCHS="${EPOCHS:-12}"
+RECCON_PROCESS_COUNT="${RECCON_PROCESS_COUNT:-4}"
+RECCON_GRAD_ACCUM_STEPS="${RECCON_GRAD_ACCUM_STEPS:-4}"
 N_BEST="${N_BEST:-20}"
 BETA="${BETA:-0.25}"
 MAX_QUERY_LENGTH="${MAX_QUERY_LENGTH:-128}"
@@ -27,7 +29,7 @@ RUN_TAG="${RUN_TAG:-reccon_official_${MODEL}_fold${FOLD}}"
 
 cd "$ROOT"
 echo "[pipeline] root=$ROOT"
-echo "[pipeline] run_tag=$RUN_TAG model=$MODEL fold=$FOLD device=$DEVICE beta=$BETA"
+echo "[pipeline] run_tag=$RUN_TAG model=$MODEL fold=$FOLD device=$DEVICE beta=$BETA batch_size=$BATCH_SIZE grad_accum=$RECCON_GRAD_ACCUM_STEPS"
 
 if [ "$DATASET" != "dailydialog" ]; then
   echo "Official RECCON train_qa.py path is wired for dailydialog. DATASET=$DATASET is not supported here." >&2
@@ -65,6 +67,8 @@ if [ "$FORCE_RETRAIN" = "1" ] || [ ! -f "$QA_MODEL_PATH/config.json" ]; then
   LR="$LR" \
   BATCH_SIZE="$BATCH_SIZE" \
   EPOCHS="$EPOCHS" \
+  RECCON_PROCESS_COUNT="$RECCON_PROCESS_COUNT" \
+  RECCON_GRAD_ACCUM_STEPS="$RECCON_GRAD_ACCUM_STEPS" \
   RECCON_PYTHON_BIN="${RECCON_PYTHON_BIN:-python}" \
   RECCON_CONDA_ENV="${RECCON_CONDA_ENV:-}" \
   bash scripts/train_reccon_official_qa.sh
