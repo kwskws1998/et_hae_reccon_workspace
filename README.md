@@ -263,6 +263,12 @@ export RECCON_CONDA_ENV=reccon_official_py310
 bash scripts/setup_reccon_official_env.sh
 ```
 
+If a previous failed run created that env with Python 3.12, the setup script now detects it and recreates the env with Python 3.10. You can force recreation manually:
+
+```bash
+RECREATE_RECCON_ENV=1 RECCON_CONDA_ENV=reccon_official_py310 bash scripts/setup_reccon_official_env.sh
+```
+
 When running the official pipeline from the modern environment, export `RECCON_CONDA_ENV=reccon_official_py310`. The wrapper will train `repos/RECCON/train_qa.py` inside that conda env, then return to the modern env for ET-HAE candidate export and reranking.
 
 3. Train a RECCON QA baseline.
