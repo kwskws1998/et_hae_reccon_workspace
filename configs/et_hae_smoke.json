@@ -1,0 +1,19 @@
+{
+  "data": {
+    "source": [
+      "/Users/wansookim/Desktop/emotion_et_prediction/data/finetune_data/iitb_sa1_sa2_cmcl_scaled.csv"
+    ],
+    "predictor_backend": "target_noise",
+    "max_sentences": 32,
+    "seed": 13
+  },
+  "training": {
+    "epochs": 2,
+    "batch_size": 8,
+    "max_length": 96,
+    "hidden_size": 32,
+    "num_layers": 2,
+    "kernel_size": 3,
+    "device": "cpu"
+  }
+}

@@ -1,0 +1,20 @@
+{
+  "baseline": {
+    "reccon_root": "repos/RECCON",
+    "dataset": "dailydialog",
+    "fold": 1,
+    "split": "test",
+    "context": true,
+    "backend": "heuristic",
+    "max_examples": 20,
+    "n_best": 5,
+    "output_dir": "artifacts/reccon_smoke/baseline"
+  },
+  "rerank": {
+    "conditions": ["predicted_et_raw", "et_hae"],
+    "beta": 0.25,
+    "predictor_backend": "heuristic",
+    "et_hae_checkpoint": "artifacts/et_hae_checkpoints/smoke/best_model.pt",
+    "et_hae_vocab": "artifacts/et_hae_checkpoints/smoke/vocab.json"
+  }
+}

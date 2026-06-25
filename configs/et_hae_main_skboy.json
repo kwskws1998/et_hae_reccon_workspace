@@ -1,0 +1,22 @@
+{
+  "data": {
+    "source": [
+      "/Users/wansookim/Desktop/emotion_et_prediction/data/pretrain_data/provo.csv",
+      "/Users/wansookim/Desktop/emotion_et_prediction/data/pretrain_data/train_and_valid.csv",
+      "/Users/wansookim/Desktop/emotion_et_prediction/data/finetune_data/iitb_sa1_sa2_cmcl_scaled.csv"
+    ],
+    "predictor_backend": "skboy",
+    "repo_id": "skboy/emotion_et_2nd_model",
+    "subfolder": "hf_emotion_et_aug_lr2e-5_len256_seed123",
+    "weights_filename": "et_predictor2_iitb_sa1_sa2_lr2e5_len256_seed123.safetensors"
+  },
+  "training": {
+    "epochs": 10,
+    "batch_size": 16,
+    "max_length": 256,
+    "hidden_size": 128,
+    "num_layers": 4,
+    "kernel_size": 5,
+    "rank_lambda": 0.1
+  }
+}

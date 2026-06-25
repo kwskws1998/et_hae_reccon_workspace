@@ -1,0 +1,66 @@
+{
+  "workspace": "/Users/wansookim/Documents/et_hae_reccon_workspace",
+  "external_repositories": [
+    {
+      "name": "RECCON",
+      "url": "https://github.com/declare-lab/RECCON",
+      "target": "repos/RECCON",
+      "role": "Official RECCON dataset, baseline code, and evaluation reference"
+    },
+    {
+      "name": "SpanBERT",
+      "url": "https://github.com/facebookresearch/SpanBERT",
+      "target": "repos/SpanBERT",
+      "role": "Reference for span-oriented start/end modeling; archived/read-only"
+    },
+    {
+      "name": "TCN",
+      "url": "https://github.com/locuslab/TCN",
+      "target": "repos/TCN",
+      "role": "Reference for 1D convolutional sequence blocks used inside ET-HAE"
+    },
+    {
+      "name": "PyTorch-VAE",
+      "url": "https://github.com/AntixK/PyTorch-VAE",
+      "target": "repos/PyTorch-VAE",
+      "role": "Reference only for autoencoder implementation patterns"
+    }
+  ],
+  "papers": [
+    {
+      "name": "Recognizing Emotion Cause in Conversations",
+      "url": "https://arxiv.org/pdf/2012.11820",
+      "target": "papers/reccon.pdf"
+    },
+    {
+      "name": "SpanBERT: Improving Pre-training by Representing and Predicting Spans",
+      "url": "https://arxiv.org/pdf/1907.10529",
+      "target": "papers/spanbert.pdf"
+    },
+    {
+      "name": "An Empirical Evaluation of Generic Convolutional and Recurrent Networks for Sequence Modeling",
+      "url": "https://arxiv.org/pdf/1803.01271",
+      "target": "papers/tcn.pdf"
+    },
+    {
+      "name": "Denoising Adversarial Autoencoders",
+      "url": "https://arxiv.org/pdf/1703.01220",
+      "target": "papers/denoising_autoencoder_reference.pdf"
+    }
+  ],
+  "local_references": [
+    {
+      "name": "emotion_et_prediction",
+      "path": "/Users/wansookim/Desktop/emotion_et_prediction",
+      "target": "data/local_refs/emotion_et_prediction",
+      "role": "Existing emotion-specific ET predictor code and scaled TRT data"
+    }
+  ],
+  "huggingface_models": [
+    {
+      "name": "skboy/emotion_et_2nd_model",
+      "url": "https://huggingface.co/skboy/emotion_et_2nd_model",
+      "role": "Frozen word-level predicted TRT source for ET-HAE"
+    }
+  ]
+}
