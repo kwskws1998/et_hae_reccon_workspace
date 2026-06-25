@@ -256,7 +256,7 @@ def evaluate_predictions(
             stride=safe_stride,
             return_overflowing_tokens=True,
             return_offsets_mapping=True,
-            padding=False,
+            padding="max_length",
             return_tensors="pt",
         )
         candidates = []
