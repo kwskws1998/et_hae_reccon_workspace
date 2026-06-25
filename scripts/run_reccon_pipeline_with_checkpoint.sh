@@ -15,6 +15,21 @@ BETA="${BETA:-0.25}"
 
 cd "$ROOT"
 
+if [[ "$QA_MODEL_PATH" == /* || "$QA_MODEL_PATH" == ./* || "$QA_MODEL_PATH" == artifacts/* || "$QA_MODEL_PATH" == repos/* ]]; then
+  if [ ! -f "$QA_MODEL_PATH/config.json" ]; then
+    echo "Missing local QA checkpoint: $QA_MODEL_PATH" >&2
+    echo "Train the baseline first, or set QA_MODEL_PATH to an existing Hugging Face model id/checkpoint." >&2
+    echo "Expected local file: $QA_MODEL_PATH/config.json" >&2
+    exit 1
+  fi
+fi
+
+if [ ! -f "$ET_HAE_DIR/best_model.pt" ] || [ ! -f "$ET_HAE_DIR/vocab.json" ]; then
+  echo "Missing ET-HAE checkpoint files under: $ET_HAE_DIR" >&2
+  echo "Run scripts/run_et_hae_main_skboy.sh first, or set ET_HAE_DIR to a completed checkpoint directory." >&2
+  exit 1
+fi
+
 BASE_DIR="artifacts/${RUN_TAG}/baseline"
 RAW_DIR="artifacts/${RUN_TAG}/predicted_et_raw_beta_${BETA//./p}"
 HAE_DIR="artifacts/${RUN_TAG}/et_hae_beta_${BETA//./p}"

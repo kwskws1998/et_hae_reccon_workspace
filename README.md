@@ -259,6 +259,8 @@ Expected checkpoint:
 artifacts/reccon_hf_qa/roberta_base_fold1_context/best_model
 ```
 
+Do not run `scripts/run_reccon_pipeline_with_checkpoint.sh` before this checkpoint exists. The pipeline consumes a trained QA checkpoint; it does not train the RECCON baseline.
+
 Legacy official RECCON path:
 
 ```bash

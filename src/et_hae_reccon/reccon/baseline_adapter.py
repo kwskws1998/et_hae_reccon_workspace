@@ -40,12 +40,13 @@ class HFQASpanScorer:
 
     @torch.no_grad()
     def predict(self, example: QAExample, n_best: int = 20) -> QAPrediction:
+        safe_stride = safe_doc_stride(self.tokenizer, example.question, self.config.max_length, self.config.doc_stride)
         encoded = self.tokenizer(
             example.question,
             example.context,
             truncation="only_second",
             max_length=self.config.max_length,
-            stride=self.config.doc_stride,
+            stride=safe_stride,
             return_overflowing_tokens=True,
             return_offsets_mapping=True,
             padding=False,
@@ -208,6 +209,16 @@ def log_softmax(values: np.ndarray) -> np.ndarray:
     safe = safe - np.max(safe)
     log_total = np.log(np.exp(safe).sum())
     return safe - log_total
+
+
+def safe_doc_stride(tokenizer, question: str, max_length: int, requested_stride: int) -> int:
+    question_ids = tokenizer(question, add_special_tokens=False)["input_ids"]
+    context_window = max_length - len(question_ids) - tokenizer.num_special_tokens_to_add(pair=True)
+    if context_window <= 1:
+        raise ValueError(
+            f"Question leaves no usable context window: question_tokens={len(question_ids)}, max_length={max_length}"
+        )
+    return max(0, min(requested_stride, context_window - 1))
 
 
 def resolve_device(device: str) -> torch.device:

@@ -113,12 +113,13 @@ def main() -> None:
 def build_features(examples, tokenizer, max_length: int, doc_stride: int) -> list[dict[str, torch.Tensor]]:
     features: list[dict[str, torch.Tensor]] = []
     for example in tqdm(examples, desc="tokenize QA"):
+        safe_stride = safe_doc_stride(tokenizer, example.question, max_length, doc_stride)
         encoded = tokenizer(
             example.question,
             example.context,
             truncation="only_second",
             max_length=max_length,
-            stride=doc_stride,
+            stride=safe_stride,
             return_overflowing_tokens=True,
             return_offsets_mapping=True,
             padding="max_length",
@@ -159,6 +160,16 @@ def build_features(examples, tokenizer, max_length: int, doc_stride: int) -> lis
                 feature["token_type_ids"] = torch.tensor(encoded["token_type_ids"][feature_index], dtype=torch.long)
             features.append(feature)
     return features
+
+
+def safe_doc_stride(tokenizer, question: str, max_length: int, requested_stride: int) -> int:
+    question_ids = tokenizer(question, add_special_tokens=False)["input_ids"]
+    context_window = max_length - len(question_ids) - tokenizer.num_special_tokens_to_add(pair=True)
+    if context_window <= 1:
+        raise ValueError(
+            f"Question leaves no usable context window: question_tokens={len(question_ids)}, max_length={max_length}"
+        )
+    return max(0, min(requested_stride, context_window - 1))
 
 
 def train_epoch(model, loader, optimizer, scheduler, scaler, device, grad_accum_steps: int, fp16: bool) -> float:
