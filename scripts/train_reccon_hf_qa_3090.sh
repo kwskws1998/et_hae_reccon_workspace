@@ -7,10 +7,12 @@ DATASET="${DATASET:-dailydialog}"
 FOLD="${FOLD:-1}"
 DEVICE="${DEVICE:-cuda}"
 EPOCHS="${EPOCHS:-12}"
-BATCH_SIZE="${BATCH_SIZE:-8}"
-GRAD_ACCUM_STEPS="${GRAD_ACCUM_STEPS:-2}"
+BATCH_SIZE="${BATCH_SIZE:-16}"
+GRAD_ACCUM_STEPS="${GRAD_ACCUM_STEPS:-1}"
+LR="${LR:-1e-5}"
 QA_MAX_LENGTH="${QA_MAX_LENGTH:-512}"
 MAX_QUERY_LENGTH="${MAX_QUERY_LENGTH:-128}"
+USE_FP16="${USE_FP16:-0}"
 OUT_DIR="${OUT_DIR:-artifacts/reccon_hf_qa/roberta_base_fold${FOLD}_context}"
 MAX_TRAIN_EXAMPLES="${MAX_TRAIN_EXAMPLES:-}"
 MAX_VALID_EXAMPLES="${MAX_VALID_EXAMPLES:-}"
@@ -28,12 +30,15 @@ python scripts/train_reccon_hf_qa.py
   --epochs "$EPOCHS" \
   --batch-size "$BATCH_SIZE" \
   --grad-accum-steps "$GRAD_ACCUM_STEPS" \
+  --lr "$LR" \
   --max-length "$QA_MAX_LENGTH" \
   --max-query-length "$MAX_QUERY_LENGTH" \
-  --device "$DEVICE" \
-  --fp16
+  --device "$DEVICE"
 )
 
+if [ "$USE_FP16" = "1" ]; then
+  CMD+=(--fp16)
+fi
 if [ -n "$MAX_TRAIN_EXAMPLES" ]; then
   CMD+=(--max-train-examples "$MAX_TRAIN_EXAMPLES")
 fi

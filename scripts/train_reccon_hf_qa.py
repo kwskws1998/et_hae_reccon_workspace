@@ -42,9 +42,9 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--model-name-or-path", default="roberta-base")
     parser.add_argument("--output-dir", required=True)
     parser.add_argument("--epochs", type=int, default=12)
-    parser.add_argument("--batch-size", type=int, default=8)
-    parser.add_argument("--grad-accum-steps", type=int, default=2)
-    parser.add_argument("--lr", type=float, default=3e-5)
+    parser.add_argument("--batch-size", type=int, default=16)
+    parser.add_argument("--grad-accum-steps", type=int, default=1)
+    parser.add_argument("--lr", type=float, default=1e-5)
     parser.add_argument("--weight-decay", type=float, default=0.01)
     parser.add_argument("--max-length", type=int, default=512)
     parser.add_argument("--max-query-length", type=int, default=128)
@@ -102,6 +102,12 @@ def main() -> None:
         "valid_examples": len(valid_examples),
         "train_features": len(train_features),
         "valid_features": len(valid_features),
+        "epochs": args.epochs,
+        "batch_size": args.batch_size,
+        "grad_accum_steps": args.grad_accum_steps,
+        "lr": args.lr,
+        "weight_decay": args.weight_decay,
+        "fp16": args.fp16,
         "max_length": args.max_length,
         "max_query_length": args.max_query_length,
         "doc_stride": args.doc_stride,
