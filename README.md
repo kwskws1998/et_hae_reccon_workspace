@@ -257,7 +257,7 @@ bash scripts/train_reccon_hf_qa_3090.sh
 
 `QA_MAX_LENGTH` is intentionally separate from the ET-HAE `MAX_LENGTH`; do not reuse `MAX_LENGTH=256` from ET-HAE for RECCON QA training. `MAX_QUERY_LENGTH` caps unusually long RECCON questions so the context span still fits inside the model window.
 
-The local RECCON paper PDF does not specify the training hyperparameters. The original RECCON repository defaults are `--lr 1e-5`, `--batch-size 16`, `--epochs 12`, and `fp16=False` in `repos/RECCON/train_qa.py`, so the wrapper defaults follow those values. Use `EPOCHS=3` only for a fast pilot run, and label it as such.
+The local RECCON paper PDF does not specify the training hyperparameters. The original RECCON repository defaults are `--lr 1e-5`, `--batch-size 16`, `--epochs 12`, and `fp16=False` in `repos/RECCON/train_qa.py`, so the wrapper defaults follow those values. The modern training script saves `best_model/` by highest validation F1, with validation loss as a tie-breaker. Use `EPOCHS=3` only for a fast pilot run, and label it as such.
 
 Expected checkpoint:
 
@@ -266,6 +266,28 @@ artifacts/reccon_hf_qa/roberta_base_fold1_context/best_model
 ```
 
 Do not run `scripts/run_reccon_pipeline_with_checkpoint.sh` before this checkpoint exists. The pipeline consumes a trained QA checkpoint; it does not train the RECCON baseline.
+
+To run ET-HAE plus both Causal Span Extraction baselines from the RECCON paper, use:
+
+```bash
+cd /workspace/et_hae_reccon_workspace
+export ROOT=/workspace/et_hae_reccon_workspace
+export DEVICE=cuda
+export DATASET=dailydialog
+export FOLD=1
+export EPOCHS=12
+export BATCH_SIZE=16
+export GRAD_ACCUM_STEPS=1
+export LR=1e-5
+export QA_MAX_LENGTH=512
+export MAX_QUERY_LENGTH=128
+export MAX_ANSWER_LENGTH=200
+export N_BEST=20
+export BETA=0.25
+export USE_FP16=0
+
+bash scripts/run_all_reccon_baselines_3090.sh
+```
 
 Legacy official RECCON path:
 

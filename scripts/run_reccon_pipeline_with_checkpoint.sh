@@ -13,6 +13,7 @@ MAX_EXAMPLES="${MAX_EXAMPLES:-}"
 N_BEST="${N_BEST:-20}"
 BETA="${BETA:-0.25}"
 MAX_QUERY_LENGTH="${MAX_QUERY_LENGTH:-128}"
+MAX_ANSWER_LENGTH="${MAX_ANSWER_LENGTH:-200}"
 
 cd "$ROOT"
 
@@ -47,6 +48,7 @@ BASE_CMD=(
   --model-name-or-path "$QA_MODEL_PATH"
   --device "$DEVICE"
   --max-query-length "$MAX_QUERY_LENGTH"
+  --max-answer-length "$MAX_ANSWER_LENGTH"
   --n-best "$N_BEST"
   --output-dir "$BASE_DIR"
 )

@@ -23,7 +23,7 @@ class HFQAScorerConfig:
     max_length: int = 512
     max_query_length: int = 128
     doc_stride: int = 128
-    max_answer_length: int = 80
+    max_answer_length: int = 200
     include_null: bool = True
 
 

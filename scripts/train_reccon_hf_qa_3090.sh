@@ -12,6 +12,8 @@ GRAD_ACCUM_STEPS="${GRAD_ACCUM_STEPS:-1}"
 LR="${LR:-1e-5}"
 QA_MAX_LENGTH="${QA_MAX_LENGTH:-512}"
 MAX_QUERY_LENGTH="${MAX_QUERY_LENGTH:-128}"
+MAX_ANSWER_LENGTH="${MAX_ANSWER_LENGTH:-200}"
+N_BEST="${N_BEST:-20}"
 USE_FP16="${USE_FP16:-0}"
 OUT_DIR="${OUT_DIR:-artifacts/reccon_hf_qa/roberta_base_fold${FOLD}_context}"
 MAX_TRAIN_EXAMPLES="${MAX_TRAIN_EXAMPLES:-}"
@@ -33,6 +35,8 @@ python scripts/train_reccon_hf_qa.py
   --lr "$LR" \
   --max-length "$QA_MAX_LENGTH" \
   --max-query-length "$MAX_QUERY_LENGTH" \
+  --max-answer-length "$MAX_ANSWER_LENGTH" \
+  --n-best "$N_BEST" \
   --device "$DEVICE"
 )
 

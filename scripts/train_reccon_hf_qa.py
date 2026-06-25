@@ -17,7 +17,10 @@ from tqdm import tqdm
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
+from et_hae_reccon.evaluation import score_prediction, summarize_scores
+from et_hae_reccon.reccon.baseline_adapter import build_span_candidates, dedupe_candidates
 from et_hae_reccon.reccon.data import load_reccon_qa, qa_file_for
+from et_hae_reccon.reccon.schemas import QAPrediction
 
 
 class RecconQADataset(Dataset):
@@ -48,6 +51,8 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--weight-decay", type=float, default=0.01)
     parser.add_argument("--max-length", type=int, default=512)
     parser.add_argument("--max-query-length", type=int, default=128)
+    parser.add_argument("--max-answer-length", type=int, default=200)
+    parser.add_argument("--n-best", type=int, default=20)
     parser.add_argument("--doc-stride", type=int, default=128)
     parser.add_argument("--max-train-examples", type=int, default=None)
     parser.add_argument("--max-valid-examples", type=int, default=None)
@@ -82,16 +87,39 @@ def main() -> None:
     scaler = torch.cuda.amp.GradScaler(enabled=args.fp16 and device.type == "cuda")
     output_dir = Path(args.output_dir)
     output_dir.mkdir(parents=True, exist_ok=True)
-    best_valid = float("inf")
+    best_valid_f1 = -1.0
+    best_valid_loss = float("inf")
+    best_epoch = 0
     history: list[dict[str, float | int]] = []
     for epoch in range(1, args.epochs + 1):
         train_loss = train_epoch(model, train_loader, optimizer, scheduler, scaler, device, args.grad_accum_steps, args.fp16)
         valid_loss = evaluate_loss(model, valid_loader, device, args.fp16)
-        row = {"epoch": epoch, "train_loss": train_loss, "valid_loss": valid_loss}
+        valid_metrics = evaluate_predictions(
+            model=model,
+            tokenizer=tokenizer,
+            examples=valid_examples,
+            max_length=args.max_length,
+            max_query_length=args.max_query_length,
+            doc_stride=args.doc_stride,
+            max_answer_length=args.max_answer_length,
+            n_best=args.n_best,
+            device=device,
+            fp16=args.fp16,
+        )
+        valid_f1 = float(valid_metrics["f1"])
+        row = {
+            "epoch": epoch,
+            "train_loss": train_loss,
+            "valid_loss": valid_loss,
+            "valid_exact_match": float(valid_metrics["exact_match"]),
+            "valid_f1": valid_f1,
+        }
         history.append(row)
         print(json.dumps(row, indent=2))
-        if valid_loss < best_valid:
-            best_valid = valid_loss
+        if valid_f1 > best_valid_f1 or (valid_f1 == best_valid_f1 and valid_loss < best_valid_loss):
+            best_valid_f1 = valid_f1
+            best_valid_loss = valid_loss
+            best_epoch = epoch
             save_model(model, tokenizer, output_dir / "best_model")
     save_model(model, tokenizer, output_dir / "last_model")
     summary = {
@@ -110,8 +138,13 @@ def main() -> None:
         "fp16": args.fp16,
         "max_length": args.max_length,
         "max_query_length": args.max_query_length,
+        "max_answer_length": args.max_answer_length,
+        "n_best": args.n_best,
         "doc_stride": args.doc_stride,
-        "best_valid_loss": best_valid,
+        "selection_metric": "valid_f1",
+        "best_epoch": best_epoch,
+        "best_valid_f1": best_valid_f1,
+        "best_valid_loss": best_valid_loss,
         "history": history,
         "best_model": str(output_dir / "best_model"),
         "last_model": str(output_dir / "last_model"),
@@ -195,6 +228,73 @@ def truncate_question(tokenizer, question: str, max_query_length: int) -> str:
         skip_special_tokens=True,
         clean_up_tokenization_spaces=True,
     )
+
+
+@torch.no_grad()
+def evaluate_predictions(
+    model,
+    tokenizer,
+    examples,
+    max_length: int,
+    max_query_length: int,
+    doc_stride: int,
+    max_answer_length: int,
+    n_best: int,
+    device: torch.device,
+    fp16: bool,
+) -> dict[str, float]:
+    model.eval()
+    rows = []
+    for example in tqdm(examples, desc="valid predictions"):
+        question = truncate_question(tokenizer, example.question, max_query_length)
+        safe_stride = safe_doc_stride(tokenizer, question, max_length, doc_stride)
+        encoded = tokenizer(
+            question,
+            example.context,
+            truncation="only_second",
+            max_length=max_length,
+            stride=safe_stride,
+            return_overflowing_tokens=True,
+            return_offsets_mapping=True,
+            padding=False,
+            return_tensors="pt",
+        )
+        candidates = []
+        for feature_index in range(encoded["input_ids"].shape[0]):
+            inputs = {
+                "input_ids": encoded["input_ids"][feature_index : feature_index + 1].to(device),
+                "attention_mask": encoded["attention_mask"][feature_index : feature_index + 1].to(device),
+            }
+            token_type_ids = encoded.get("token_type_ids")
+            if token_type_ids is not None:
+                inputs["token_type_ids"] = token_type_ids[feature_index : feature_index + 1].to(device)
+            with torch.cuda.amp.autocast(enabled=fp16 and device.type == "cuda"):
+                outputs = model(**inputs)
+            candidates.extend(
+                build_span_candidates(
+                    context=example.context,
+                    start_logits=outputs.start_logits.squeeze(0).detach().cpu().numpy(),
+                    end_logits=outputs.end_logits.squeeze(0).detach().cpu().numpy(),
+                    offsets=encoded["offset_mapping"][feature_index].tolist(),
+                    sequence_ids=encoded.sequence_ids(feature_index),
+                    n_best=n_best,
+                    max_answer_length=max_answer_length,
+                    include_null=True,
+                )
+            )
+        top = sorted(dedupe_candidates(candidates), key=lambda item: item.score, reverse=True)[:n_best]
+        prediction = QAPrediction(
+            example_id=example.example_id,
+            condition="valid",
+            prediction_text=top[0].text if top else "",
+            candidates=top,
+            answers=example.answers,
+            is_impossible=example.is_impossible,
+            metadata=example.metadata,
+        )
+        rows.append(score_prediction(prediction))
+    metrics = summarize_scores(rows)["valid"]
+    return {"exact_match": float(metrics["exact_match"]), "f1": float(metrics["f1"])}
 
 
 def train_epoch(model, loader, optimizer, scheduler, scaler, device, grad_accum_steps: int, fp16: bool) -> float:
