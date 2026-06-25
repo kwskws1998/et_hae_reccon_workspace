@@ -30,8 +30,10 @@ if [ "$WITH_CONTEXT" = "1" ]; then
   ARGS+=(--context)
 fi
 
+echo "[reccon-official] training start: model=$MODEL fold=$FOLD context=$WITH_CONTEXT epochs=$EPOCHS batch_size=$BATCH_SIZE lr=$LR"
 if [ -n "$RECCON_CONDA_ENV" ]; then
-  conda run -n "$RECCON_CONDA_ENV" python train_qa.py "${ARGS[@]}"
+  conda run --no-capture-output -n "$RECCON_CONDA_ENV" python -u train_qa.py "${ARGS[@]}"
 else
-  "$RECCON_PYTHON_BIN" train_qa.py "${ARGS[@]}"
+  "$RECCON_PYTHON_BIN" -u train_qa.py "${ARGS[@]}"
 fi
+echo "[reccon-official] training done"

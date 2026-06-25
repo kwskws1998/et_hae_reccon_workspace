@@ -26,6 +26,8 @@ ET_HAE_DIR="${ET_HAE_DIR:-artifacts/et_hae_checkpoints/main_skboy}"
 RUN_TAG="${RUN_TAG:-reccon_official_${MODEL}_fold${FOLD}}"
 
 cd "$ROOT"
+echo "[pipeline] root=$ROOT"
+echo "[pipeline] run_tag=$RUN_TAG model=$MODEL fold=$FOLD device=$DEVICE beta=$BETA"
 
 if [ "$DATASET" != "dailydialog" ]; then
   echo "Official RECCON train_qa.py path is wired for dailydialog. DATASET=$DATASET is not supported here." >&2
@@ -54,6 +56,7 @@ fi
 QA_MODEL_PATH="repos/RECCON/outputs/${MODEL_ID}-dailydialog-qa-${CONTEXT_NAME}-fold${FOLD}/best_model"
 
 if [ "$FORCE_RETRAIN" = "1" ] || [ ! -f "$QA_MODEL_PATH/config.json" ]; then
+  echo "[pipeline] official RECCON checkpoint missing or FORCE_RETRAIN=1; training baseline"
   ROOT="$ROOT" \
   MODEL="$MODEL" \
   FOLD="$FOLD" \
@@ -65,10 +68,13 @@ if [ "$FORCE_RETRAIN" = "1" ] || [ ! -f "$QA_MODEL_PATH/config.json" ]; then
   RECCON_PYTHON_BIN="${RECCON_PYTHON_BIN:-python}" \
   RECCON_CONDA_ENV="${RECCON_CONDA_ENV:-}" \
   bash scripts/train_reccon_official_qa.sh
+else
+  echo "[pipeline] using existing official RECCON checkpoint: $QA_MODEL_PATH"
 fi
 
 if [ "$RUN_ET_HAE" = "1" ]; then
   if [ ! -f "$ET_HAE_DIR/best_model.pt" ] || [ ! -f "$ET_HAE_DIR/vocab.json" ]; then
+    echo "[pipeline] ET-HAE checkpoint missing; training ET-HAE at $ET_HAE_DIR"
     ROOT="$ROOT" \
     OUT_TAG="$(basename "$ET_HAE_DIR")" \
     DEVICE="$DEVICE" \
@@ -77,6 +83,8 @@ if [ "$RUN_ET_HAE" = "1" ]; then
     MAX_LENGTH="${ET_HAE_MAX_LENGTH:-256}" \
     PYTHON_BIN="$PYTHON_BIN" \
     bash scripts/run_et_hae_main_skboy.sh
+  else
+    echo "[pipeline] using existing ET-HAE checkpoint: $ET_HAE_DIR"
   fi
 fi
 
@@ -102,12 +110,15 @@ EXPORT_CMD=(
 if [ -n "$MAX_EXAMPLES" ]; then
   EXPORT_CMD+=(--max-examples "$MAX_EXAMPLES")
 fi
+echo "[pipeline] exporting official baseline span candidates -> $BASE_DIR"
 "${EXPORT_CMD[@]}"
 
 if [ "$RUN_RERANK" = "0" ]; then
+  echo "[pipeline] RUN_RERANK=0; stopping after candidate export"
   exit 0
 fi
 
+echo "[pipeline] running predicted_et_raw rerank -> $RAW_DIR"
 "$PYTHON_BIN" scripts/run_reccon_predicted_et_raw.py \
   --baseline-predictions "$BASE_DIR/predictions.jsonl" \
   --output-dir "$RAW_DIR" \
@@ -116,6 +127,7 @@ fi
   --cache-dir artifacts/hf_cache \
   --device "$DEVICE"
 
+echo "[pipeline] running et_hae rerank -> $HAE_DIR"
 "$PYTHON_BIN" scripts/run_reccon_et_hae_rerank.py \
   --baseline-predictions "$BASE_DIR/predictions.jsonl" \
   --output-dir "$HAE_DIR" \
@@ -126,6 +138,7 @@ fi
   --et-hae-vocab "$ET_HAE_DIR/vocab.json" \
   --device "$DEVICE"
 
+echo "[pipeline] summarizing -> $SUMMARY_DIR"
 "$PYTHON_BIN" scripts/summarize_results.py \
   --condition-dir "$BASE_DIR" \
   --condition-dir "$RAW_DIR" \
@@ -133,3 +146,4 @@ fi
   --output-dir "$SUMMARY_DIR"
 
 cat "$SUMMARY_DIR/condition_summary.csv"
+echo "[pipeline] done"
