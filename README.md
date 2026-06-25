@@ -263,7 +263,7 @@ export RECCON_CONDA_ENV=reccon_official_py310
 bash scripts/setup_reccon_official_env.sh
 ```
 
-If a previous failed run created that env with Python 3.12, the setup script now detects it and recreates the env with Python 3.10. You can force recreation manually:
+If a previous failed run created that env with Python 3.12, the setup script now detects it and recreates the env with Python 3.10. It ignores ambient `PYTHON_VERSION`; override with `RECCON_PYTHON_VERSION` only if needed. You can force recreation manually:
 
 ```bash
 RECREATE_RECCON_ENV=1 RECCON_CONDA_ENV=reccon_official_py310 bash scripts/setup_reccon_official_env.sh
