@@ -2,6 +2,7 @@
 set -euo pipefail
 
 ROOT="${ROOT:-/Users/wansookim/Documents/et_hae_reccon_workspace}"
+PYTHON_BIN="${PYTHON_BIN:-python}"
 DEVICE="${DEVICE:-cuda}"
 EPOCHS="${EPOCHS:-10}"
 BATCH_SIZE="${BATCH_SIZE:-16}"
@@ -22,7 +23,7 @@ for source_path in "$PROVO_CSV" "$TRAIN_VALID_CSV" "$FINETUNE_CSV"; do
   fi
 done
 
-python scripts/prepare_data.py \
+"$PYTHON_BIN" scripts/prepare_data.py \
   --output-jsonl "artifacts/et_hae_data/${OUT_TAG}.jsonl" \
   --source "$PROVO_CSV" \
   --source "$TRAIN_VALID_CSV" \
@@ -30,7 +31,7 @@ python scripts/prepare_data.py \
   --predictor-backend skboy \
   --cache-dir artifacts/hf_cache
 
-python scripts/train_et_hae.py \
+"$PYTHON_BIN" scripts/train_et_hae.py \
   --train-jsonl "artifacts/et_hae_data/${OUT_TAG}.jsonl" \
   --output-dir "artifacts/et_hae_checkpoints/${OUT_TAG}" \
   --epochs "$EPOCHS" \

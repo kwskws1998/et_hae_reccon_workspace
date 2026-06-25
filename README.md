@@ -252,6 +252,21 @@ bash scripts/run_et_hae_main_skboy.sh
 
 `repos/RECCON` is intentionally not committed because `repos/` is ignored. The run scripts call `scripts/ensure_reccon_repo.sh` automatically and clone the official RECCON repository if it is missing.
 
+The official RECCON code uses an older Transformers API. Keep it in a separate environment from the modern ET-HAE code:
+
+```bash
+cd /workspace/et_hae_reccon_workspace
+
+# Modern environment for ET-HAE, candidate export, and reranking.
+INSTALL_TORCH=0 DOWNLOAD_REFS=0 RUN_TESTS=1 bash scripts/setup_gpu_env.sh
+
+# Separate environment for official RECCON train_qa.py.
+export RECCON_CONDA_ENV=reccon_official_py310
+bash scripts/setup_reccon_official_env.sh
+```
+
+When running the official pipeline from the modern environment, export `RECCON_CONDA_ENV=reccon_official_py310`. The wrapper will train `repos/RECCON/train_qa.py` inside that conda env, then return to the modern env for ET-HAE candidate export and reranking.
+
 3. Train a RECCON QA baseline.
 
 Recommended path for the baseline is the official RECCON training script:
@@ -263,6 +278,7 @@ export MODEL=rob
 export FOLD=1
 export CUDA_DEVICE=0
 export WITH_CONTEXT=1
+export RECCON_CONDA_ENV=reccon_official_py310
 export EPOCHS=12
 export BATCH_SIZE=16
 export LR=1e-5
@@ -308,6 +324,7 @@ export MODEL=rob
 export FOLD=1
 export CUDA_DEVICE=0
 export WITH_CONTEXT=1
+export RECCON_CONDA_ENV=reccon_official_py310
 export ET_HAE_DIR=artifacts/et_hae_checkpoints/main_skboy
 export RUN_TAG=reccon_official_rob_fold1
 export DEVICE=cuda

@@ -2,6 +2,7 @@
 set -euo pipefail
 
 ROOT="${ROOT:-/Users/wansookim/Documents/et_hae_reccon_workspace}"
+PYTHON_BIN="${PYTHON_BIN:-python}"
 QA_MODEL_PATH="${QA_MODEL_PATH:-repos/RECCON/outputs/roberta-base-dailydialog-qa-with-context-fold1/best_model}"
 ET_HAE_DIR="${ET_HAE_DIR:-artifacts/et_hae_checkpoints/main_skboy}"
 RUN_TAG="${RUN_TAG:-reccon_fold1_main}"
@@ -41,7 +42,7 @@ HAE_DIR="artifacts/${RUN_TAG}/et_hae_beta_${BETA//./p}"
 SUMMARY_DIR="artifacts/${RUN_TAG}/summary"
 
 BASE_CMD=(
-  python scripts/export_reccon_official_candidates.py
+  "$PYTHON_BIN" scripts/export_reccon_official_candidates.py
   --reccon-root repos/RECCON
   --dataset "$DATASET"
   --fold "$FOLD"
@@ -64,7 +65,7 @@ if [ "$RUN_RERANK" = "0" ]; then
   exit 0
 fi
 
-python scripts/run_reccon_predicted_et_raw.py \
+"$PYTHON_BIN" scripts/run_reccon_predicted_et_raw.py \
   --baseline-predictions "$BASE_DIR/predictions.jsonl" \
   --output-dir "$RAW_DIR" \
   --beta "$BETA" \
@@ -72,7 +73,7 @@ python scripts/run_reccon_predicted_et_raw.py \
   --cache-dir artifacts/hf_cache \
   --device "$DEVICE"
 
-python scripts/run_reccon_et_hae_rerank.py \
+"$PYTHON_BIN" scripts/run_reccon_et_hae_rerank.py \
   --baseline-predictions "$BASE_DIR/predictions.jsonl" \
   --output-dir "$HAE_DIR" \
   --beta "$BETA" \
@@ -82,7 +83,7 @@ python scripts/run_reccon_et_hae_rerank.py \
   --et-hae-vocab "$ET_HAE_DIR/vocab.json" \
   --device "$DEVICE"
 
-python scripts/summarize_results.py \
+"$PYTHON_BIN" scripts/summarize_results.py \
   --condition-dir "$BASE_DIR" \
   --condition-dir "$RAW_DIR" \
   --condition-dir "$HAE_DIR" \

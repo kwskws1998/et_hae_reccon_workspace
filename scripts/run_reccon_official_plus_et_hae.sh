@@ -2,6 +2,7 @@
 set -euo pipefail
 
 ROOT="${ROOT:-/Users/wansookim/Documents/et_hae_reccon_workspace}"
+PYTHON_BIN="${PYTHON_BIN:-python}"
 DEVICE="${DEVICE:-cuda}"
 CUDA_DEVICE="${CUDA_DEVICE:-0}"
 DATASET="${DATASET:-dailydialog}"
@@ -60,6 +61,8 @@ if [ "$FORCE_RETRAIN" = "1" ] || [ ! -f "$QA_MODEL_PATH/config.json" ]; then
   LR="$LR" \
   BATCH_SIZE="$BATCH_SIZE" \
   EPOCHS="$EPOCHS" \
+  RECCON_PYTHON_BIN="${RECCON_PYTHON_BIN:-python}" \
+  RECCON_CONDA_ENV="${RECCON_CONDA_ENV:-}" \
   bash scripts/train_reccon_official_qa.sh
 fi
 
@@ -71,6 +74,7 @@ if [ "$RUN_ET_HAE" = "1" ]; then
     EPOCHS="${ET_HAE_EPOCHS:-10}" \
     BATCH_SIZE="${ET_HAE_BATCH_SIZE:-16}" \
     MAX_LENGTH="${ET_HAE_MAX_LENGTH:-256}" \
+    PYTHON_BIN="$PYTHON_BIN" \
     bash scripts/run_et_hae_main_skboy.sh
   fi
 fi
@@ -81,7 +85,7 @@ HAE_DIR="artifacts/${RUN_TAG}/et_hae_beta_${BETA//./p}"
 SUMMARY_DIR="artifacts/${RUN_TAG}/summary"
 
 EXPORT_CMD=(
-  python scripts/export_reccon_official_candidates.py
+  "$PYTHON_BIN" scripts/export_reccon_official_candidates.py
   --reccon-root repos/RECCON
   --dataset "$DATASET"
   --fold "$FOLD"
@@ -103,7 +107,7 @@ if [ "$RUN_RERANK" = "0" ]; then
   exit 0
 fi
 
-python scripts/run_reccon_predicted_et_raw.py \
+"$PYTHON_BIN" scripts/run_reccon_predicted_et_raw.py \
   --baseline-predictions "$BASE_DIR/predictions.jsonl" \
   --output-dir "$RAW_DIR" \
   --beta "$BETA" \
@@ -111,7 +115,7 @@ python scripts/run_reccon_predicted_et_raw.py \
   --cache-dir artifacts/hf_cache \
   --device "$DEVICE"
 
-python scripts/run_reccon_et_hae_rerank.py \
+"$PYTHON_BIN" scripts/run_reccon_et_hae_rerank.py \
   --baseline-predictions "$BASE_DIR/predictions.jsonl" \
   --output-dir "$HAE_DIR" \
   --beta "$BETA" \
@@ -121,7 +125,7 @@ python scripts/run_reccon_et_hae_rerank.py \
   --et-hae-vocab "$ET_HAE_DIR/vocab.json" \
   --device "$DEVICE"
 
-python scripts/summarize_results.py \
+"$PYTHON_BIN" scripts/summarize_results.py \
   --condition-dir "$BASE_DIR" \
   --condition-dir "$RAW_DIR" \
   --condition-dir "$HAE_DIR" \

@@ -9,6 +9,8 @@ WITH_CONTEXT="${WITH_CONTEXT:-1}"
 LR="${LR:-1e-5}"
 BATCH_SIZE="${BATCH_SIZE:-16}"
 EPOCHS="${EPOCHS:-12}"
+RECCON_PYTHON_BIN="${RECCON_PYTHON_BIN:-python}"
+RECCON_CONDA_ENV="${RECCON_CONDA_ENV:-}"
 
 bash "$ROOT/scripts/ensure_reccon_repo.sh"
 
@@ -27,4 +29,8 @@ if [ "$WITH_CONTEXT" = "1" ]; then
   ARGS+=(--context)
 fi
 
-python train_qa.py "${ARGS[@]}"
+if [ -n "$RECCON_CONDA_ENV" ]; then
+  conda run -n "$RECCON_CONDA_ENV" python train_qa.py "${ARGS[@]}"
+else
+  "$RECCON_PYTHON_BIN" train_qa.py "${ARGS[@]}"
+fi

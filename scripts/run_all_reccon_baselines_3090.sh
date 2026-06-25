@@ -2,6 +2,7 @@
 set -euo pipefail
 
 ROOT="${ROOT:-/Users/wansookim/Documents/et_hae_reccon_workspace}"
+PYTHON_BIN="${PYTHON_BIN:-python}"
 DEVICE="${DEVICE:-cuda}"
 DATASET="${DATASET:-dailydialog}"
 FOLD="${FOLD:-1}"
@@ -45,6 +46,7 @@ train_and_eval_baseline() {
   run_tag="$(basename "$RUN_ROOT")/${label}_fold${FOLD}"
 
   ROOT="$ROOT" \
+  PYTHON_BIN="$PYTHON_BIN" \
   DEVICE="$DEVICE" \
   CUDA_DEVICE="${CUDA_DEVICE:-0}" \
   DATASET="$DATASET" \
@@ -60,6 +62,8 @@ train_and_eval_baseline() {
   MAX_QUERY_LENGTH="$MAX_QUERY_LENGTH" \
   MAX_ANSWER_LENGTH="$MAX_ANSWER_LENGTH" \
   FORCE_RETRAIN="$FORCE_RETRAIN" \
+  RECCON_PYTHON_BIN="${RECCON_PYTHON_BIN:-python}" \
+  RECCON_CONDA_ENV="${RECCON_CONDA_ENV:-}" \
   RUN_ET_HAE=0 \
   RUN_RERANK="$RUN_PIPELINE" \
   ET_HAE_DIR="$ET_HAE_DIR" \
