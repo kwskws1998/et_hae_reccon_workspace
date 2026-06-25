@@ -250,6 +250,8 @@ export OUT_TAG=main_skboy
 bash scripts/run_et_hae_main_skboy.sh
 ```
 
+`repos/RECCON` is intentionally not committed because `repos/` is ignored. The run scripts call `scripts/ensure_reccon_repo.sh` automatically and clone the official RECCON repository if it is missing.
+
 3. Train a RECCON QA baseline.
 
 Recommended path for the baseline is the official RECCON training script:

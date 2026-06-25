@@ -10,6 +10,8 @@ LR="${LR:-1e-5}"
 BATCH_SIZE="${BATCH_SIZE:-16}"
 EPOCHS="${EPOCHS:-12}"
 
+bash "$ROOT/scripts/ensure_reccon_repo.sh"
+
 cd "$ROOT/repos/RECCON"
 mkdir -p outputs results
 

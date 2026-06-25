@@ -18,6 +18,8 @@ RUN_RERANK="${RUN_RERANK:-1}"
 
 cd "$ROOT"
 
+bash "$ROOT/scripts/ensure_reccon_repo.sh"
+
 if [[ "$QA_MODEL_PATH" == /* || "$QA_MODEL_PATH" == ./* || "$QA_MODEL_PATH" == artifacts/* || "$QA_MODEL_PATH" == repos/* ]]; then
   if [ ! -f "$QA_MODEL_PATH/config.json" ]; then
     echo "Missing local QA checkpoint: $QA_MODEL_PATH" >&2

@@ -30,6 +30,8 @@ if [ "$DATASET" != "dailydialog" ]; then
   exit 1
 fi
 
+bash "$ROOT/scripts/ensure_reccon_repo.sh"
+
 if [ "$MODEL" = "rob" ]; then
   MODEL_ID="roberta-base"
 elif [ "$MODEL" = "span" ]; then
