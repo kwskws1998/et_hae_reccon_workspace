@@ -41,7 +41,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--context", action="store_true")
     parser.add_argument("--model-name-or-path", default="roberta-base")
     parser.add_argument("--output-dir", required=True)
-    parser.add_argument("--epochs", type=int, default=3)
+    parser.add_argument("--epochs", type=int, default=12)
     parser.add_argument("--batch-size", type=int, default=8)
     parser.add_argument("--grad-accum-steps", type=int, default=2)
     parser.add_argument("--lr", type=float, default=3e-5)

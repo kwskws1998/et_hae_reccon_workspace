@@ -20,6 +20,17 @@ Expected local ET data:
 - `/Users/wansookim/Desktop/emotion_et_prediction/data/pretrain_data/train_and_valid.csv`
 - `/Users/wansookim/Desktop/emotion_et_prediction/data/finetune_data/iitb_sa1_sa2_cmcl_scaled.csv`
 
+On a cloud GPU box, these Mac paths will not exist. Copy the same CSV files into the cloud workspace and set either `DATA_ROOT` or the three explicit CSV variables before running ET-HAE:
+
+```bash
+export DATA_ROOT=/workspace/emotion_et_prediction/data
+
+# Or set each file explicitly:
+export PROVO_CSV=/workspace/emotion_et_prediction/data/pretrain_data/provo.csv
+export TRAIN_VALID_CSV=/workspace/emotion_et_prediction/data/pretrain_data/train_and_valid.csv
+export FINETUNE_CSV=/workspace/emotion_et_prediction/data/finetune_data/iitb_sa1_sa2_cmcl_scaled.csv
+```
+
 Reference repositories and papers are managed by `scripts/download_refs.sh`.
 
 ## Smoke Run
@@ -63,6 +74,8 @@ python scripts/train_et_hae.py \
   --batch-size 16 \
   --max-length 256
 ```
+
+The convenience wrapper `scripts/run_et_hae_main_skboy.sh` runs this full ET-HAE preparation and training path. It is not the smoke run. If it fails before `scripts/train_et_hae.py` starts, no ET-HAE training has happened.
 
 ## RECCON Smoke Run
 
@@ -227,12 +240,14 @@ export MODEL_NAME=roberta-base
 export DATASET=dailydialog
 export FOLD=1
 export DEVICE=cuda
-export EPOCHS=3
+export EPOCHS=12
 export BATCH_SIZE=8
 export GRAD_ACCUM_STEPS=2
 export OUT_DIR=artifacts/reccon_hf_qa/roberta_base_fold1_context
 bash scripts/train_reccon_hf_qa_3090.sh
 ```
+
+The local RECCON paper PDF does not specify the training epoch count. The original RECCON repository default is `--epochs 12` in `repos/RECCON/train_qa.py`, so use `EPOCHS=12` for a paper-aligned baseline. Use `EPOCHS=3` only for a fast pilot run, and label it as such.
 
 Expected checkpoint:
 
