@@ -40,8 +40,8 @@ Reference repositories and papers are managed by `scripts/download_refs.sh`.
 ## Smoke Run
 
 ```bash
-cd /Users/wansookim/Documents/et_hae_reccon_workspace
-python -m pip install -e ".[dev]"
+cd /path/to/et_hae_reccon_workspace
+python -m pip install --no-build-isolation -e ".[dev]"
 python scripts/prepare_data.py \
   --output-jsonl artifacts/et_hae_data/smoke.jsonl \
   --source data/finetune_data/iitb_sa1_sa2_cmcl_scaled.csv \
@@ -63,7 +63,7 @@ pytest
 Use the frozen emotion ET predictor to produce the noisy input heatmap:
 
 ```bash
-cd /Users/wansookim/Documents/et_hae_reccon_workspace
+cd /path/to/et_hae_reccon_workspace
 python scripts/prepare_data.py \
   --output-jsonl artifacts/et_hae_data/emotion_et_skboy.jsonl \
   --source data/pretrain_data/provo.csv \
@@ -91,7 +91,7 @@ The RECCON path has two layers:
 The smoke command below uses a lightweight offline heuristic backend. It is only for checking the reranking machinery without downloading or training a QA model.
 
 ```bash
-cd /Users/wansookim/Documents/et_hae_reccon_workspace
+cd /path/to/et_hae_reccon_workspace
 
 python scripts/run_reccon_baseline.py \
   --reccon-root repos/RECCON \
@@ -176,7 +176,7 @@ python scripts/run_reccon_beta_sweep.py \
 ## Reference Collection
 
 ```bash
-cd /Users/wansookim/Documents/et_hae_reccon_workspace
+cd /path/to/et_hae_reccon_workspace
 bash scripts/download_refs.sh
 ```
 
@@ -198,7 +198,6 @@ On a 3090 box, clone or copy this repository, then run:
 
 ```bash
 cd /workspace/et_hae_reccon_workspace
-export ROOT=/workspace/et_hae_reccon_workspace
 export INSTALL_TORCH=1
 export DOWNLOAD_REFS=1
 export RUN_TESTS=1
@@ -209,12 +208,13 @@ If PyTorch with CUDA is already installed:
 
 ```bash
 cd /workspace/et_hae_reccon_workspace
-export ROOT=/workspace/et_hae_reccon_workspace
 export INSTALL_TORCH=0
 export DOWNLOAD_REFS=1
 export RUN_TESTS=1
 bash scripts/setup_gpu_env.sh
 ```
+
+All shell scripts infer `ROOT` from their own location, so exporting `ROOT` is optional for normal clones.
 
 The `.gitignore` excludes generated and bulky files:
 
@@ -233,7 +233,6 @@ Commit the source/config/scripts/tests first. Recreate external repos, papers, m
 
 ```bash
 cd /workspace/et_hae_reccon_workspace
-export ROOT=/workspace/et_hae_reccon_workspace
 INSTALL_TORCH=1 DOWNLOAD_REFS=1 RUN_TESTS=1 bash scripts/setup_gpu_env.sh
 ```
 
@@ -241,7 +240,6 @@ INSTALL_TORCH=1 DOWNLOAD_REFS=1 RUN_TESTS=1 bash scripts/setup_gpu_env.sh
 
 ```bash
 cd /workspace/et_hae_reccon_workspace
-export ROOT=/workspace/et_hae_reccon_workspace
 export DEVICE=cuda
 export EPOCHS=10
 export BATCH_SIZE=16
@@ -273,7 +271,6 @@ Recommended path for the baseline is the official RECCON training script:
 
 ```bash
 cd /workspace/et_hae_reccon_workspace
-export ROOT=/workspace/et_hae_reccon_workspace
 export MODEL=rob
 export FOLD=1
 export CUDA_DEVICE=0
@@ -299,7 +296,6 @@ To run ET-HAE plus both Causal Span Extraction baselines from the RECCON paper, 
 
 ```bash
 cd /workspace/et_hae_reccon_workspace
-export ROOT=/workspace/et_hae_reccon_workspace
 export DEVICE=cuda
 export DATASET=dailydialog
 export FOLD=1
@@ -319,7 +315,6 @@ To run one official baseline plus ET-HAE reranking:
 
 ```bash
 cd /workspace/et_hae_reccon_workspace
-export ROOT=/workspace/et_hae_reccon_workspace
 export MODEL=rob
 export FOLD=1
 export CUDA_DEVICE=0
@@ -361,7 +356,6 @@ Legacy direct official RECCON path:
 
 ```bash
 cd /workspace/et_hae_reccon_workspace
-export ROOT=/workspace/et_hae_reccon_workspace
 export MODEL=rob
 export FOLD=1
 export CUDA_DEVICE=0
@@ -381,7 +375,6 @@ The official path uses the original repository stack and may require old depende
 
 ```bash
 cd /workspace/et_hae_reccon_workspace
-export ROOT=/workspace/et_hae_reccon_workspace
 export QA_MODEL_PATH=repos/RECCON/outputs/roberta-base-dailydialog-qa-with-context-fold1/best_model
 export ET_HAE_DIR=artifacts/et_hae_checkpoints/main_skboy
 export RUN_TAG=reccon_fold1_main

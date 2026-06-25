@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-ROOT="${ROOT:-/Users/wansookim/Documents/et_hae_reccon_workspace}"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+ROOT="${ROOT:-$(cd "$SCRIPT_DIR/.." && pwd)}"
 MODEL_NAME="${MODEL_NAME:-roberta-base}"
 DATASET="${DATASET:-dailydialog}"
 FOLD="${FOLD:-1}"
