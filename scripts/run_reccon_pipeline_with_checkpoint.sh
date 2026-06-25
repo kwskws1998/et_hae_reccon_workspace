@@ -14,6 +14,7 @@ N_BEST="${N_BEST:-20}"
 BETA="${BETA:-0.25}"
 MAX_QUERY_LENGTH="${MAX_QUERY_LENGTH:-128}"
 MAX_ANSWER_LENGTH="${MAX_ANSWER_LENGTH:-200}"
+RUN_RERANK="${RUN_RERANK:-1}"
 
 cd "$ROOT"
 
@@ -38,7 +39,7 @@ HAE_DIR="artifacts/${RUN_TAG}/et_hae_beta_${BETA//./p}"
 SUMMARY_DIR="artifacts/${RUN_TAG}/summary"
 
 BASE_CMD=(
-  python scripts/run_reccon_baseline.py
+  python scripts/export_reccon_official_candidates.py
   --reccon-root repos/RECCON
   --dataset "$DATASET"
   --fold "$FOLD"
@@ -56,6 +57,10 @@ if [ -n "$MAX_EXAMPLES" ]; then
   BASE_CMD+=(--max-examples "$MAX_EXAMPLES")
 fi
 "${BASE_CMD[@]}"
+
+if [ "$RUN_RERANK" = "0" ]; then
+  exit 0
+fi
 
 python scripts/run_reccon_predicted_et_raw.py \
   --baseline-predictions "$BASE_DIR/predictions.jsonl" \

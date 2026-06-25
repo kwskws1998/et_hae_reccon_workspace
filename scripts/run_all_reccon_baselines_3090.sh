@@ -40,46 +40,32 @@ fi
 
 train_and_eval_baseline() {
   local label="$1"
-  local model_name="$2"
-  local out_dir="$RUN_ROOT/models/${label}_fold${FOLD}_context"
+  local official_model="$2"
   local run_tag
   run_tag="$(basename "$RUN_ROOT")/${label}_fold${FOLD}"
 
-  if [ "$FORCE_RETRAIN" = "1" ] || [ ! -f "$out_dir/best_model/config.json" ]; then
-    MODEL_NAME="$model_name" \
-    ROOT="$ROOT" \
-    DATASET="$DATASET" \
-    FOLD="$FOLD" \
-    DEVICE="$DEVICE" \
-    EPOCHS="$EPOCHS" \
-    BATCH_SIZE="$BATCH_SIZE" \
-    GRAD_ACCUM_STEPS="$GRAD_ACCUM_STEPS" \
-    LR="$LR" \
-    QA_MAX_LENGTH="$QA_MAX_LENGTH" \
-    MAX_QUERY_LENGTH="$MAX_QUERY_LENGTH" \
-    MAX_ANSWER_LENGTH="$MAX_ANSWER_LENGTH" \
-    N_BEST="$N_BEST" \
-    USE_FP16="$USE_FP16" \
-    OUT_DIR="$out_dir" \
-    bash scripts/train_reccon_hf_qa_3090.sh
-  fi
-
-  if [ "$RUN_PIPELINE" = "1" ]; then
-    QA_MODEL_PATH="$out_dir/best_model" \
-    ROOT="$ROOT" \
-    ET_HAE_DIR="$ET_HAE_DIR" \
-    RUN_TAG="$run_tag" \
-    DEVICE="$DEVICE" \
-    DATASET="$DATASET" \
-    FOLD="$FOLD" \
-    SPLIT="$SPLIT" \
-    N_BEST="$N_BEST" \
-    BETA="$BETA" \
-    MAX_QUERY_LENGTH="$MAX_QUERY_LENGTH" \
-    MAX_ANSWER_LENGTH="$MAX_ANSWER_LENGTH" \
-    bash scripts/run_reccon_pipeline_with_checkpoint.sh
-  fi
+  ROOT="$ROOT" \
+  DEVICE="$DEVICE" \
+  CUDA_DEVICE="${CUDA_DEVICE:-0}" \
+  DATASET="$DATASET" \
+  FOLD="$FOLD" \
+  SPLIT="$SPLIT" \
+  MODEL="$official_model" \
+  WITH_CONTEXT=1 \
+  LR="$LR" \
+  BATCH_SIZE="$BATCH_SIZE" \
+  EPOCHS="$EPOCHS" \
+  N_BEST="$N_BEST" \
+  BETA="$BETA" \
+  MAX_QUERY_LENGTH="$MAX_QUERY_LENGTH" \
+  MAX_ANSWER_LENGTH="$MAX_ANSWER_LENGTH" \
+  FORCE_RETRAIN="$FORCE_RETRAIN" \
+  RUN_ET_HAE=0 \
+  RUN_RERANK="$RUN_PIPELINE" \
+  ET_HAE_DIR="$ET_HAE_DIR" \
+  RUN_TAG="$run_tag" \
+  bash scripts/run_reccon_official_plus_et_hae.sh
 }
 
-train_and_eval_baseline "roberta_base" "roberta-base"
-train_and_eval_baseline "spanbert_squad2" "mrm8488/spanbert-finetuned-squadv2"
+train_and_eval_baseline "roberta_base" "rob"
+train_and_eval_baseline "spanbert_squad2" "span"

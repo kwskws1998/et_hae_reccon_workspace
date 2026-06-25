@@ -7,6 +7,7 @@ import argparse
 import csv
 import json
 import sys
+from dataclasses import replace
 from pathlib import Path
 
 from tqdm import tqdm
@@ -35,6 +36,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--max-examples", type=int, default=None)
     parser.add_argument("--n-best", type=int, default=20)
     parser.add_argument("--output-dir", default="artifacts/reccon_baseline")
+    parser.add_argument("--condition", default="baseline")
     return parser.parse_args()
 
 
@@ -59,17 +61,17 @@ def main() -> None:
                 max_answer_length=args.max_answer_length,
             )
         )
-    predictions = [
-        scorer.predict(example, n_best=args.n_best)
-        for example in tqdm(examples, desc=f"baseline:{args.backend}")
-    ]
+    predictions = []
+    for example in tqdm(examples, desc=f"baseline:{args.backend}"):
+        prediction = scorer.predict(example, n_best=args.n_best)
+        predictions.append(replace(prediction, condition=args.condition))
     output_dir = Path(args.output_dir)
     predictions_path = output_dir / "predictions.jsonl"
     write_predictions_jsonl(predictions, predictions_path)
     rows = [score_prediction(prediction) for prediction in predictions]
     write_metric_rows(rows, output_dir / "metrics.csv")
     summary = {
-        "condition": "baseline",
+        "condition": args.condition,
         "backend": args.backend,
         "input_path": str(input_path),
         "examples": len(examples),

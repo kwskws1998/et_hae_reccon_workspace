@@ -85,10 +85,10 @@ The convenience wrapper `scripts/run_et_hae_main_skboy.sh` runs this full ET-HAE
 
 The RECCON path has two layers:
 
-1. baseline span candidate generation;
+1. official or smoke baseline span candidate generation;
 2. post-hoc ET reranking.
 
-The baseline can use either a lightweight offline heuristic backend or a Hugging Face QA checkpoint. A RECCON-trained checkpoint can be passed through `--model-name-or-path` when available.
+The smoke command below uses a lightweight offline heuristic backend. It is only for checking the reranking machinery without downloading or training a QA model.
 
 ```bash
 cd /Users/wansookim/Documents/et_hae_reccon_workspace
@@ -142,6 +142,23 @@ python scripts/run_reccon_baseline.py \
   --n-best 5 \
   --output-dir artifacts/reccon_smoke/hf_tiny_baseline
 ```
+
+Official RECCON checkpoint candidate export:
+
+```bash
+python scripts/export_reccon_official_candidates.py \
+  --reccon-root repos/RECCON \
+  --dataset dailydialog \
+  --fold 1 \
+  --split test \
+  --context \
+  --model-name-or-path repos/RECCON/outputs/roberta-base-dailydialog-qa-with-context-fold1/best_model \
+  --device cuda \
+  --n-best 20 \
+  --output-dir artifacts/reccon_official_rob_fold1/official_candidate_baseline
+```
+
+This command does not train the RECCON model. It loads an official `best_model/` checkpoint and exports the n-best candidate spans required by the ET-HAE reranker.
 
 Beta sweep:
 
@@ -235,37 +252,30 @@ bash scripts/run_et_hae_main_skboy.sh
 
 3. Train a RECCON QA baseline.
 
-Recommended modern Hugging Face path for 3090:
+Recommended path for the baseline is the official RECCON training script:
 
 ```bash
 cd /workspace/et_hae_reccon_workspace
 export ROOT=/workspace/et_hae_reccon_workspace
-export MODEL_NAME=roberta-base
-export DATASET=dailydialog
+export MODEL=rob
 export FOLD=1
-export DEVICE=cuda
+export CUDA_DEVICE=0
+export WITH_CONTEXT=1
 export EPOCHS=12
 export BATCH_SIZE=16
-export GRAD_ACCUM_STEPS=1
 export LR=1e-5
-export QA_MAX_LENGTH=512
-export MAX_QUERY_LENGTH=128
-export USE_FP16=0
-export OUT_DIR=artifacts/reccon_hf_qa/roberta_base_fold1_context
-bash scripts/train_reccon_hf_qa_3090.sh
+bash scripts/train_reccon_official_qa.sh
 ```
-
-`QA_MAX_LENGTH` is intentionally separate from the ET-HAE `MAX_LENGTH`; do not reuse `MAX_LENGTH=256` from ET-HAE for RECCON QA training. `MAX_QUERY_LENGTH` caps unusually long RECCON questions so the context span still fits inside the model window.
-
-The local RECCON paper PDF does not specify the training hyperparameters. The original RECCON repository defaults are `--lr 1e-5`, `--batch-size 16`, `--epochs 12`, and `fp16=False` in `repos/RECCON/train_qa.py`, so the wrapper defaults follow those values. The modern training script saves `best_model/` by highest validation F1, with validation loss as a tie-breaker. Use `EPOCHS=3` only for a fast pilot run, and label it as such.
 
 Expected checkpoint:
 
 ```text
-artifacts/reccon_hf_qa/roberta_base_fold1_context/best_model
+repos/RECCON/outputs/roberta-base-dailydialog-qa-with-context-fold1/best_model
 ```
 
 Do not run `scripts/run_reccon_pipeline_with_checkpoint.sh` before this checkpoint exists. The pipeline consumes a trained QA checkpoint; it does not train the RECCON baseline.
+
+The experimental Hugging Face wrapper `scripts/train_reccon_hf_qa.py` is kept for debugging and modern-stack ablations only. Do not use it as the official RECCON baseline.
 
 To run ET-HAE plus both Causal Span Extraction baselines from the RECCON paper, use:
 
@@ -277,9 +287,7 @@ export DATASET=dailydialog
 export FOLD=1
 export EPOCHS=12
 export BATCH_SIZE=16
-export GRAD_ACCUM_STEPS=1
 export LR=1e-5
-export QA_MAX_LENGTH=512
 export MAX_QUERY_LENGTH=128
 export MAX_ANSWER_LENGTH=200
 export N_BEST=20
@@ -289,7 +297,48 @@ export USE_FP16=0
 bash scripts/run_all_reccon_baselines_3090.sh
 ```
 
-Legacy official RECCON path:
+To run one official baseline plus ET-HAE reranking:
+
+```bash
+cd /workspace/et_hae_reccon_workspace
+export ROOT=/workspace/et_hae_reccon_workspace
+export MODEL=rob
+export FOLD=1
+export CUDA_DEVICE=0
+export WITH_CONTEXT=1
+export ET_HAE_DIR=artifacts/et_hae_checkpoints/main_skboy
+export RUN_TAG=reccon_official_rob_fold1
+export DEVICE=cuda
+export BETA=0.25
+bash scripts/run_reccon_official_plus_et_hae.sh
+```
+
+For SpanBERT:
+
+```bash
+export MODEL=span
+export RUN_TAG=reccon_official_span_fold1
+bash scripts/run_reccon_official_plus_et_hae.sh
+```
+
+Expected official checkpoints:
+
+```text
+repos/RECCON/outputs/roberta-base-dailydialog-qa-with-context-fold1/best_model
+repos/RECCON/outputs/spanbert-squad-dailydialog-qa-with-context-fold1/best_model
+```
+
+The implementation contract is:
+
+```text
+official RECCON train_qa.py trains and evaluates the baseline
+export_reccon_official_candidates.py loads official best_model/ and exports n-best spans
+run_reccon_*_rerank.py changes only the final span selection using ET salience
+```
+
+The RECCON QA model architecture and baseline training loop are not modified by ET-HAE.
+
+Legacy direct official RECCON path:
 
 ```bash
 cd /workspace/et_hae_reccon_workspace
@@ -307,14 +356,14 @@ Expected legacy checkpoint:
 repos/RECCON/outputs/roberta-base-dailydialog-qa-with-context-fold1/best_model
 ```
 
-The legacy path uses the original repository stack and may require old dependencies. Prefer the modern path on a 3090 unless exact reproduction of the original training script is required.
+The official path uses the original repository stack and may require old dependencies. Use this path for the baseline when the experiment claims RECCON reproduction.
 
-4. Run baseline + predicted ET raw rerank + ET-HAE rerank:
+4. Run baseline candidate export + predicted ET raw rerank + ET-HAE rerank:
 
 ```bash
 cd /workspace/et_hae_reccon_workspace
 export ROOT=/workspace/et_hae_reccon_workspace
-export QA_MODEL_PATH=artifacts/reccon_hf_qa/roberta_base_fold1_context/best_model
+export QA_MODEL_PATH=repos/RECCON/outputs/roberta-base-dailydialog-qa-with-context-fold1/best_model
 export ET_HAE_DIR=artifacts/et_hae_checkpoints/main_skboy
 export RUN_TAG=reccon_fold1_main
 export DEVICE=cuda
