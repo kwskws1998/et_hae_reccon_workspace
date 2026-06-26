@@ -16,7 +16,17 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--baseline-predictions", required=True)
     parser.add_argument("--output-root", required=True)
     parser.add_argument("--beta", action="append", type=float, required=True)
-    parser.add_argument("--predictor-backend", choices=["skboy", "heuristic"], default="heuristic")
+    parser.add_argument(
+        "--predictor-backend",
+        choices=["skboy", "trt_checkpoint", "trt_hf_export", "heuristic"],
+        default="heuristic",
+    )
+    parser.add_argument("--trt-checkpoint-path", default=None)
+    parser.add_argument("--trt-model-name", default=None)
+    parser.add_argument("--trt-model-dir", default=None)
+    parser.add_argument("--trt-repo-id", default=None)
+    parser.add_argument("--trt-weight-name", default=None)
+    parser.add_argument("--trt-subfolder", default=None)
     parser.add_argument("--et-hae-checkpoint", default=None)
     parser.add_argument("--et-hae-vocab", default=None)
     parser.add_argument("--device", default="cpu")
@@ -49,6 +59,17 @@ def main() -> None:
             "--device",
             args.device,
         ]
+        optional_pairs = [
+            ("--trt-checkpoint-path", args.trt_checkpoint_path),
+            ("--trt-model-name", args.trt_model_name),
+            ("--trt-model-dir", args.trt_model_dir),
+            ("--trt-repo-id", args.trt_repo_id),
+            ("--trt-weight-name", args.trt_weight_name),
+            ("--trt-subfolder", args.trt_subfolder),
+        ]
+        for flag, value in optional_pairs:
+            if value:
+                command.extend([flag, value])
         if args.condition == "et_hae":
             if not args.et_hae_checkpoint or not args.et_hae_vocab:
                 raise ValueError("--et-hae-checkpoint and --et-hae-vocab are required for et_hae.")

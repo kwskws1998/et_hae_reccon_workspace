@@ -36,6 +36,8 @@ runs/
 !data/pretrain_data/*.csv
 !data/finetune_data/
 !data/finetune_data/*.csv
+!data/final_training/
+!data/final_training/*.csv
 !configs/*.json
 !references_manifest.json
 !tests/fixtures/**/*.jsonl

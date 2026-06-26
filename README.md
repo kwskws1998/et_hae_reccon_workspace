@@ -10,7 +10,9 @@ The current implemented scope is ET-HAE:
 4. Train a deterministic 1D CNN denoising autoencoder over word sequences.
 5. Validate that predicted heatmaps are finite, masked, and sum to one.
 
-The frozen ET predictor is `skboy/emotion_et_2nd_model`. It is not trained by this code. ET-HAE is the trainable module.
+The legacy frozen ET predictor is `skboy/emotion_et_2nd_model`. The current
+main path can instead use the new TRT-only emotion ET predictor checkpoint or
+its Hugging Face export. ET-HAE is the trainable module in both cases.
 
 ## Main Paths
 
@@ -19,6 +21,19 @@ Required ET data is committed under the repository:
 - `data/pretrain_data/provo.csv`
 - `data/pretrain_data/train_and_valid.csv`
 - `data/finetune_data/iitb_sa1_sa2_cmcl_scaled.csv`
+- `data/final_training/final_pretrain_trt_scaled.csv`
+- `data/final_training/final_finetune_trt_scaled.csv`
+
+For the new TRT-only predictor path, the ET-HAE target labels come from:
+
+```text
+data/final_training/final_pretrain_trt_scaled.csv
+data/final_training/final_finetune_trt_scaled.csv
+```
+
+Do not mix these with the legacy `train_and_valid.csv` path in the same new
+TRT-only ET-HAE run; the final files already encode the official ZuCo/Provo/IITB
+split used by the new predictor pipeline.
 
 The default ET-HAE scripts read from `data/` inside this repo. On a cloud GPU box, a normal `git pull` should be enough. Check availability with:
 
@@ -58,7 +73,57 @@ python scripts/train_et_hae.py \
 pytest
 ```
 
-## Main ET-HAE Run
+## Main ET-HAE Run with the New TRT-Only Predictor
+
+Use this path after training the new TRT-only emotion ET predictor. The frozen
+TRT checkpoint generates the input heatmap; the final training CSVs provide the
+observed TRT target heatmap.
+
+```bash
+cd /path/to/et_hae_reccon_workspace
+
+DEVICE=cuda \
+TRT_CHECKPOINT_PATH=artifacts/trt_only_roberta_lr2e5_preval10/checkpoint_best.pt \
+OUT_TAG=main_trt_checkpoint \
+EPOCHS=10 \
+BATCH_SIZE=16 \
+MAX_LENGTH=256 \
+bash scripts/run_et_hae_main_trt.sh
+```
+
+If the new TRT-only predictor has already been packaged as a Hugging Face-style
+export folder:
+
+```bash
+PREDICTOR_BACKEND=trt_hf_export \
+TRT_MODEL_DIR=/path/to/hf_emotion_trt_roberta \
+DEVICE=cuda \
+OUT_TAG=main_trt_hf_export \
+bash scripts/run_et_hae_main_trt.sh
+```
+
+For a Hub-hosted export:
+
+```bash
+PREDICTOR_BACKEND=trt_hf_export \
+TRT_REPO_ID=skboy/emotion_trt_roberta \
+DEVICE=cuda \
+OUT_TAG=main_trt_hub_export \
+bash scripts/run_et_hae_main_trt.sh
+```
+
+Outputs:
+
+```text
+artifacts/et_hae_data/<OUT_TAG>.jsonl
+artifacts/et_hae_data/<OUT_TAG>.summary.json
+artifacts/et_hae_checkpoints/<OUT_TAG>/best_model.pt
+artifacts/et_hae_checkpoints/<OUT_TAG>/last_model.pt
+artifacts/et_hae_checkpoints/<OUT_TAG>/vocab.json
+artifacts/et_hae_checkpoints/<OUT_TAG>/train_summary.json
+```
+
+## Legacy ET-HAE Run with `skboy/emotion_et_2nd_model`
 
 Use the frozen emotion ET predictor to produce the noisy input heatmap:
 

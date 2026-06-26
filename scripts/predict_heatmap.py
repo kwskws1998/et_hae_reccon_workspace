@@ -20,10 +20,20 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--checkpoint", required=True)
     parser.add_argument("--vocab", required=True)
     parser.add_argument("--output-json", default=None)
-    parser.add_argument("--predictor-backend", choices=["skboy", "heuristic"], default="heuristic")
+    parser.add_argument(
+        "--predictor-backend",
+        choices=["skboy", "trt_checkpoint", "trt_hf_export", "heuristic"],
+        default="heuristic",
+    )
     parser.add_argument("--repo-id", default="skboy/emotion_et_2nd_model")
     parser.add_argument("--weights-filename", default="et_predictor2_iitb_sa1_sa2_lr2e5_len256_seed123.safetensors")
     parser.add_argument("--subfolder", default="hf_emotion_et_aug_lr2e-5_len256_seed123")
+    parser.add_argument("--trt-checkpoint-path", default=None)
+    parser.add_argument("--trt-model-name", default=None)
+    parser.add_argument("--trt-model-dir", default=None)
+    parser.add_argument("--trt-repo-id", default=None)
+    parser.add_argument("--trt-weight-name", default=None)
+    parser.add_argument("--trt-subfolder", default=None)
     parser.add_argument("--cache-dir", default=None)
     parser.add_argument("--local-files-only", action="store_true")
     parser.add_argument("--device", default="cpu")
@@ -40,6 +50,13 @@ def main() -> None:
         subfolder=args.subfolder,
         cache_dir=args.cache_dir,
         local_files_only=args.local_files_only,
+        trt_checkpoint_path=args.trt_checkpoint_path,
+        trt_model_name=args.trt_model_name,
+        trt_model_dir=args.trt_model_dir,
+        trt_repo_id=args.trt_repo_id,
+        trt_weight_name=args.trt_weight_name,
+        trt_subfolder=args.trt_subfolder,
+        device=args.device,
     )
     predicted = predictor.predict_words(args.text)
     words = [row.word for row in predicted]
