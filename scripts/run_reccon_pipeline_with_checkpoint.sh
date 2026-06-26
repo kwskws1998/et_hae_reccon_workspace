@@ -17,10 +17,19 @@ BETA="${BETA:-0.25}"
 MAX_QUERY_LENGTH="${MAX_QUERY_LENGTH:-128}"
 MAX_ANSWER_LENGTH="${MAX_ANSWER_LENGTH:-200}"
 RUN_RERANK="${RUN_RERANK:-1}"
+RERANK_POLICY="${RERANK_POLICY:-full}"
 
 cd "$ROOT"
 
 bash "$ROOT/scripts/ensure_reccon_repo.sh"
+
+if [ "$RERANK_POLICY" = "full" ]; then
+  RAW_TAG="predicted_et_raw"
+  HAE_TAG="et_hae"
+else
+  RAW_TAG="predicted_et_raw_${RERANK_POLICY}"
+  HAE_TAG="et_hae_${RERANK_POLICY}"
+fi
 
 if [[ "$QA_MODEL_PATH" == /* || "$QA_MODEL_PATH" == ./* || "$QA_MODEL_PATH" == artifacts/* || "$QA_MODEL_PATH" == repos/* ]]; then
   if [ ! -f "$QA_MODEL_PATH/config.json" ]; then
@@ -38,8 +47,8 @@ if [ ! -f "$ET_HAE_DIR/best_model.pt" ] || [ ! -f "$ET_HAE_DIR/vocab.json" ]; th
 fi
 
 BASE_DIR="artifacts/${RUN_TAG}/baseline"
-RAW_DIR="artifacts/${RUN_TAG}/predicted_et_raw_beta_${BETA//./p}"
-HAE_DIR="artifacts/${RUN_TAG}/et_hae_beta_${BETA//./p}"
+RAW_DIR="artifacts/${RUN_TAG}/${RAW_TAG}_beta_${BETA//./p}"
+HAE_DIR="artifacts/${RUN_TAG}/${HAE_TAG}_beta_${BETA//./p}"
 SUMMARY_DIR="artifacts/${RUN_TAG}/summary"
 
 BASE_CMD=(
@@ -69,6 +78,7 @@ fi
 "$PYTHON_BIN" scripts/run_reccon_predicted_et_raw.py \
   --baseline-predictions "$BASE_DIR/predictions.jsonl" \
   --output-dir "$RAW_DIR" \
+  --rerank-policy "$RERANK_POLICY" \
   --beta "$BETA" \
   --predictor-backend skboy \
   --cache-dir artifacts/hf_cache \
@@ -77,6 +87,7 @@ fi
 "$PYTHON_BIN" scripts/run_reccon_et_hae_rerank.py \
   --baseline-predictions "$BASE_DIR/predictions.jsonl" \
   --output-dir "$HAE_DIR" \
+  --rerank-policy "$RERANK_POLICY" \
   --beta "$BETA" \
   --predictor-backend skboy \
   --cache-dir artifacts/hf_cache \

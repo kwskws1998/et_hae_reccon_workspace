@@ -13,12 +13,15 @@ from et_hae_reccon.inference import refine_word_heatmap
 from et_hae_reccon.reccon.schemas import QACandidate, QAPrediction
 from et_hae_reccon.reccon.text import span_word_indices, word_spans
 
+RerankPolicy = Literal["full", "span_only"]
+
 
 def rerank_with_heatmap(
     prediction: QAPrediction,
     context_heatmap: np.ndarray,
     beta: float,
     condition: str,
+    policy: RerankPolicy = "full",
     eps: float = 1e-8,
 ) -> QAPrediction:
     spans = word_spans(str(prediction.metadata.get("context", "")))
@@ -29,9 +32,14 @@ def rerank_with_heatmap(
         raise ValueError("context_heatmap must be a 1D array.")
     if spans:
         heatmap = fit_heatmap_to_length(heatmap, len(spans))
+    baseline_top = max(prediction.candidates, key=_base_candidate_score) if prediction.candidates else None
+    if policy == "span_only":
+        return _rerank_span_only(prediction, heatmap, beta, condition, baseline_top, spans, eps)
+    if policy != "full":
+        raise ValueError(f"Unsupported rerank policy: {policy}")
     reranked: list[QACandidate] = []
     for candidate in prediction.candidates:
-        base_score = candidate.base_score if candidate.base_score is not None else candidate.score
+        base_score = _base_candidate_score(candidate)
         if candidate.null:
             new_score = float(base_score)
             reranked.append(
@@ -70,6 +78,84 @@ def rerank_with_heatmap(
         is_impossible=prediction.is_impossible,
         metadata=prediction.metadata,
     )
+
+
+def _rerank_span_only(
+    prediction: QAPrediction,
+    heatmap: np.ndarray,
+    beta: float,
+    condition: str,
+    baseline_top: QACandidate | None,
+    spans,
+    eps: float,
+) -> QAPrediction:
+    if baseline_top is None:
+        return dataclasses.replace(prediction, condition=condition)
+    if baseline_top.null:
+        candidates = sorted(
+            (_with_base_score(candidate) for candidate in prediction.candidates),
+            key=_base_candidate_score,
+            reverse=True,
+        )
+        return QAPrediction(
+            example_id=prediction.example_id,
+            condition=condition,
+            prediction_text="",
+            candidates=candidates,
+            answers=prediction.answers,
+            is_impossible=prediction.is_impossible,
+            metadata=prediction.metadata,
+        )
+    non_null: list[QACandidate] = []
+    null_candidates: list[QACandidate] = []
+    for candidate in prediction.candidates:
+        if candidate.null:
+            null_candidates.append(_with_base_score(candidate))
+        else:
+            non_null.append(_rerank_non_null_candidate(candidate, heatmap, spans, beta, eps))
+    top_non_null = sorted(non_null, key=lambda item: item.score, reverse=True)
+    candidates = top_non_null + null_candidates
+    return QAPrediction(
+        example_id=prediction.example_id,
+        condition=condition,
+        prediction_text=top_non_null[0].text if top_non_null else "",
+        candidates=candidates,
+        answers=prediction.answers,
+        is_impossible=prediction.is_impossible,
+        metadata=prediction.metadata,
+    )
+
+
+def _rerank_non_null_candidate(
+    candidate: QACandidate,
+    heatmap: np.ndarray,
+    spans,
+    beta: float,
+    eps: float,
+) -> QACandidate:
+    base_score = _base_candidate_score(candidate)
+    if candidate.start_char is None or candidate.end_char is None:
+        et_mass = 0.0
+    else:
+        indices = span_word_indices(candidate.start_char, candidate.end_char, spans)
+        et_mass = float(heatmap[indices].sum()) if indices else 0.0
+    et_score = math.log(et_mass + eps)
+    return dataclasses.replace(
+        candidate,
+        score=float(base_score + beta * et_score),
+        base_score=float(base_score),
+        et_score=float(et_score),
+        et_mass=float(et_mass),
+    )
+
+
+def _with_base_score(candidate: QACandidate) -> QACandidate:
+    base_score = _base_candidate_score(candidate)
+    return dataclasses.replace(candidate, score=float(base_score), base_score=float(base_score))
+
+
+def _base_candidate_score(candidate: QACandidate) -> float:
+    return float(candidate.base_score if candidate.base_score is not None else candidate.score)
 
 
 def fit_heatmap_to_length(heatmap: np.ndarray, target_length: int) -> np.ndarray:

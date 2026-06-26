@@ -12,6 +12,7 @@ from pathlib import Path
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser()
     parser.add_argument("--condition", choices=["predicted_et_raw", "et_hae"], required=True)
+    parser.add_argument("--rerank-policy", choices=["full", "span_only"], default="full")
     parser.add_argument("--baseline-predictions", required=True)
     parser.add_argument("--output-root", required=True)
     parser.add_argument("--beta", action="append", type=float, required=True)
@@ -26,9 +27,10 @@ def main() -> None:
     args = parse_args()
     script = Path(__file__).with_name("run_reccon_rerank.py")
     condition_dirs = []
+    condition_tag = args.condition if args.rerank_policy == "full" else f"{args.condition}_{args.rerank_policy}"
     for beta in args.beta:
         beta_tag = str(beta).replace(".", "p")
-        output_dir = Path(args.output_root) / f"{args.condition}_beta_{beta_tag}"
+        output_dir = Path(args.output_root) / f"{condition_tag}_beta_{beta_tag}"
         command = [
             sys.executable,
             str(script),
@@ -36,6 +38,8 @@ def main() -> None:
             args.baseline_predictions,
             "--condition",
             args.condition,
+            "--rerank-policy",
+            args.rerank_policy,
             "--output-dir",
             str(output_dir),
             "--beta",

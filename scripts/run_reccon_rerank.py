@@ -24,6 +24,7 @@ def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser()
     parser.add_argument("--baseline-predictions", required=True)
     parser.add_argument("--condition", choices=["predicted_et_raw", "et_hae"], required=True)
+    parser.add_argument("--rerank-policy", choices=["full", "span_only"], default="full")
     parser.add_argument("--output-dir", required=True)
     parser.add_argument("--beta", type=float, default=0.25)
     parser.add_argument("--predictor-backend", choices=["skboy", "heuristic"], default="heuristic")
@@ -41,6 +42,7 @@ def parse_args() -> argparse.Namespace:
 
 def main() -> None:
     args = parse_args()
+    output_condition = args.condition if args.rerank_policy == "full" else f"{args.condition}_{args.rerank_policy}"
     baseline_predictions = read_predictions_jsonl(args.baseline_predictions)
     predictor = load_word_et_predictor(
         backend=args.predictor_backend,
@@ -79,7 +81,8 @@ def main() -> None:
                 prediction=prediction,
                 context_heatmap=heatmap,
                 beta=args.beta,
-                condition=args.condition,
+                condition=output_condition,
+                policy=args.rerank_policy,
             )
         )
     output_dir = Path(args.output_dir)
@@ -89,7 +92,9 @@ def main() -> None:
     rows = [score_prediction(prediction) for prediction in reranked]
     write_metric_rows(rows, output_dir / "metrics.csv")
     summary = {
-        "condition": args.condition,
+        "condition": output_condition,
+        "heatmap_condition": args.condition,
+        "rerank_policy": args.rerank_policy,
         "beta": args.beta,
         "predictor_backend": args.predictor_backend,
         "baseline_predictions": args.baseline_predictions,

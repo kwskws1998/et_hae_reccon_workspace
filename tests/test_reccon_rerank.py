@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import dataclasses
+
 import numpy as np
 
 from et_hae_reccon.reccon.baseline_adapter import HeuristicQAScorer
@@ -47,6 +49,36 @@ def test_rerank_accepts_short_heatmap_for_longer_context() -> None:
     assert reranked.candidates
 
 
+def test_span_only_does_not_let_null_replace_baseline_span() -> None:
+    prediction = make_prediction_with_null(null_score=9.9, span_score=10.0)
+    heatmap = np.asarray([0.01, 0.49, 0.49, 0.01])
+
+    full = rerank_with_heatmap(prediction, heatmap, beta=1.0, condition="et_hae")
+    span_only = rerank_with_heatmap(
+        prediction,
+        heatmap,
+        beta=1.0,
+        condition="et_hae_span_only",
+        policy="span_only",
+    )
+
+    assert full.prediction_text == ""
+    assert span_only.prediction_text != ""
+
+
+def test_span_only_preserves_baseline_null_decision() -> None:
+    prediction = make_prediction_with_null(null_score=10.1, span_score=10.0)
+    reranked = rerank_with_heatmap(
+        prediction,
+        np.asarray([0.01, 0.49, 0.49, 0.01]),
+        beta=1.0,
+        condition="et_hae_span_only",
+        policy="span_only",
+    )
+    assert reranked.prediction_text == ""
+    assert reranked.candidates[0].null
+
+
 def make_prediction() -> QAPrediction:
     context = "alpha beta gamma delta"
     return QAPrediction(
@@ -76,4 +108,30 @@ def make_prediction() -> QAPrediction:
         answers=[QAAnswer("beta gamma", 6)],
         is_impossible=False,
         metadata={"context": context},
+    )
+
+
+def make_prediction_with_null(null_score: float, span_score: float) -> QAPrediction:
+    prediction = make_prediction()
+    return QAPrediction(
+        example_id=prediction.example_id,
+        condition=prediction.condition,
+        prediction_text=prediction.prediction_text,
+        candidates=[
+            dataclasses.replace(prediction.candidates[0], score=span_score, base_score=span_score),
+            *prediction.candidates[1:],
+            QACandidate(
+                text="",
+                score=null_score,
+                base_score=null_score,
+                start_char=None,
+                end_char=None,
+                start_token=None,
+                end_token=None,
+                null=True,
+            ),
+        ],
+        answers=prediction.answers,
+        is_impossible=prediction.is_impossible,
+        metadata=prediction.metadata,
     )

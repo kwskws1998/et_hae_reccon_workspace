@@ -24,12 +24,22 @@ MAX_EXAMPLES="${MAX_EXAMPLES:-}"
 FORCE_RETRAIN="${FORCE_RETRAIN:-0}"
 RUN_ET_HAE="${RUN_ET_HAE:-1}"
 RUN_RERANK="${RUN_RERANK:-1}"
+RERANK_POLICY="${RERANK_POLICY:-full}"
 ET_HAE_DIR="${ET_HAE_DIR:-artifacts/et_hae_checkpoints/main_skboy}"
 RUN_TAG="${RUN_TAG:-reccon_official_${MODEL}_fold${FOLD}}"
 
 cd "$ROOT"
+if [ "$RERANK_POLICY" = "full" ]; then
+  RAW_TAG="predicted_et_raw"
+  HAE_TAG="et_hae"
+else
+  RAW_TAG="predicted_et_raw_${RERANK_POLICY}"
+  HAE_TAG="et_hae_${RERANK_POLICY}"
+fi
+
 echo "[pipeline] root=$ROOT"
 echo "[pipeline] run_tag=$RUN_TAG model=$MODEL fold=$FOLD device=$DEVICE beta=$BETA batch_size=$BATCH_SIZE grad_accum=$RECCON_GRAD_ACCUM_STEPS"
+echo "[pipeline] rerank_policy=$RERANK_POLICY"
 
 if [ "$DATASET" != "dailydialog" ]; then
   echo "Official RECCON train_qa.py path is wired for dailydialog. DATASET=$DATASET is not supported here." >&2
@@ -93,8 +103,8 @@ if [ "$RUN_ET_HAE" = "1" ]; then
 fi
 
 BASE_DIR="artifacts/${RUN_TAG}/official_candidate_baseline"
-RAW_DIR="artifacts/${RUN_TAG}/predicted_et_raw_beta_${BETA//./p}"
-HAE_DIR="artifacts/${RUN_TAG}/et_hae_beta_${BETA//./p}"
+RAW_DIR="artifacts/${RUN_TAG}/${RAW_TAG}_beta_${BETA//./p}"
+HAE_DIR="artifacts/${RUN_TAG}/${HAE_TAG}_beta_${BETA//./p}"
 SUMMARY_DIR="artifacts/${RUN_TAG}/summary"
 
 EXPORT_CMD=(
@@ -126,6 +136,7 @@ echo "[pipeline] running predicted_et_raw rerank -> $RAW_DIR"
 "$PYTHON_BIN" scripts/run_reccon_predicted_et_raw.py \
   --baseline-predictions "$BASE_DIR/predictions.jsonl" \
   --output-dir "$RAW_DIR" \
+  --rerank-policy "$RERANK_POLICY" \
   --beta "$BETA" \
   --predictor-backend skboy \
   --cache-dir artifacts/hf_cache \
@@ -135,6 +146,7 @@ echo "[pipeline] running et_hae rerank -> $HAE_DIR"
 "$PYTHON_BIN" scripts/run_reccon_et_hae_rerank.py \
   --baseline-predictions "$BASE_DIR/predictions.jsonl" \
   --output-dir "$HAE_DIR" \
+  --rerank-policy "$RERANK_POLICY" \
   --beta "$BETA" \
   --predictor-backend skboy \
   --cache-dir artifacts/hf_cache \
