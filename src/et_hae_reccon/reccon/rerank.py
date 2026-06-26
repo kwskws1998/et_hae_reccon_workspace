@@ -27,8 +27,8 @@ def rerank_with_heatmap(
     heatmap = np.asarray(context_heatmap, dtype=np.float64)
     if heatmap.ndim != 1:
         raise ValueError("context_heatmap must be a 1D array.")
-    if spans and len(heatmap) != len(spans):
-        raise ValueError(f"Heatmap length {len(heatmap)} does not match context words {len(spans)}.")
+    if spans:
+        heatmap = fit_heatmap_to_length(heatmap, len(spans))
     reranked: list[QACandidate] = []
     for candidate in prediction.candidates:
         base_score = candidate.base_score if candidate.base_score is not None else candidate.score
@@ -70,6 +70,32 @@ def rerank_with_heatmap(
         is_impossible=prediction.is_impossible,
         metadata=prediction.metadata,
     )
+
+
+def fit_heatmap_to_length(heatmap: np.ndarray, target_length: int) -> np.ndarray:
+    values = np.asarray(heatmap, dtype=np.float64)
+    if values.ndim != 1:
+        raise ValueError("heatmap must be a 1D array.")
+    if target_length < 0:
+        raise ValueError("target_length must be non-negative.")
+    if target_length == 0:
+        return np.asarray([], dtype=np.float64)
+    if values.size == 0:
+        return np.full(target_length, 1.0 / target_length, dtype=np.float64)
+    if not np.all(np.isfinite(values)):
+        raise ValueError("heatmap contains non-finite values.")
+    if np.any(values < 0):
+        raise ValueError("heatmap contains negative values.")
+    if values.size > target_length:
+        values = values[:target_length]
+    elif values.size < target_length:
+        total = float(values.sum())
+        pad_value = total / float(values.size) if total > 0.0 else 1.0
+        values = np.pad(values, (0, target_length - values.size), constant_values=pad_value)
+    total = float(values.sum())
+    if total <= 0.0:
+        return np.full(target_length, 1.0 / target_length, dtype=np.float64)
+    return values / total
 
 
 def predicted_raw_heatmap_for_context(predictor, context: str) -> np.ndarray:

@@ -3,7 +3,7 @@ from __future__ import annotations
 import numpy as np
 
 from et_hae_reccon.reccon.baseline_adapter import HeuristicQAScorer
-from et_hae_reccon.reccon.rerank import rerank_with_heatmap
+from et_hae_reccon.reccon.rerank import fit_heatmap_to_length, rerank_with_heatmap
 from et_hae_reccon.reccon.schemas import QAAnswer, QACandidate, QAExample, QAPrediction
 
 
@@ -32,6 +32,19 @@ def test_rerank_positive_beta_promotes_high_heatmap_span() -> None:
     reranked = rerank_with_heatmap(prediction, np.asarray([0.01, 0.49, 0.49, 0.01]), beta=1.0, condition="et_hae")
     assert reranked.prediction_text == "beta gamma"
     assert reranked.candidates[0].et_mass > 0.9
+
+
+def test_fit_heatmap_to_length_pads_and_renormalizes() -> None:
+    fitted = fit_heatmap_to_length(np.asarray([0.25, 0.75]), 4)
+    assert fitted.shape == (4,)
+    assert np.isclose(fitted.sum(), 1.0)
+    assert np.all(fitted > 0.0)
+
+
+def test_rerank_accepts_short_heatmap_for_longer_context() -> None:
+    prediction = make_prediction()
+    reranked = rerank_with_heatmap(prediction, np.asarray([0.5, 0.5]), beta=0.1, condition="et_hae")
+    assert reranked.candidates
 
 
 def make_prediction() -> QAPrediction:
